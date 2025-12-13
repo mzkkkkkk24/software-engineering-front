@@ -1,0 +1,311 @@
+/* 基础样式重置 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  min-height: 100vh;
+  color: #1f2937;
+  background-color: #ffffff;
+}
+
+/* 登录页主容器（左右分栏布局） */
+.login-container {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* 左侧插画区域（占比50%） */
+.login-illustration {
+  flex: 1;
+  background-color: #f3f4f6; /* 浅灰背景 */
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+/* 插画内容（使用参考图风格的图形） */
+.illustration-content {
+  width: 100%;
+  height: 100%;
+  max-width: 500px;
+  max-height: 500px;
+  background-image: url('./images/login.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* 登录页主容器*/
+.login-container {
+  width: 100%;
+  max-width: 1200px; /* 限制最大宽度，仅占中间区域 */
+  min-height: 500px; /* 固定卡片高度 */
+  margin: 40px auto; /* 上下留间距，左右自动居中 */
+  background-color: #ffffff; /* 卡片背景为白色 */
+  border-radius: 20px; /* 卡片圆角 */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); /* 卡片阴影，增强层次感 */
+  overflow: hidden; /* 裁剪内部溢出内容 */
+  display: flex; /* 内部保持左右分栏 */
+}
+
+/* 左侧插画区域（占容器的40%） */
+.login-illustration {
+  flex: 0 0 40%; /* 固定占比，不再自适应全屏 */
+  background-color: #f3f4f6; /* 插画区浅灰背景 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+/* 右侧表单区域（占容器的60%） */
+.login-form-container {
+  flex: 0 0 60%; /* 固定占比 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: #ffffff;
+}
+
+/* 表单容器（限制宽度，居中显示） */
+.form-wrapper {
+  width: 100%;
+  max-width: 380px;
+  padding: 1rem;
+}
+
+/* 品牌标识 */
+.brand-logo {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 2.5rem;
+  background-color: #1f2937; /* 深色品牌标识 */
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* 欢迎文字 */
+.welcome-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.75rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.welcome-subtitle {
+  color: #6b7280;
+  font-size: 1.05rem;
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+/* 表单项样式 */
+.form-item {
+  margin-bottom: 1.5rem;
+}
+
+.form-item label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.form-item input {
+  width: 100%;
+  height: 48px;
+  padding: 0 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px; /* 圆角输入框 */
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+}
+
+.form-item input:focus {
+  border-color: #3b82f6; /* 聚焦时蓝色边框 */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); /* 轻微聚焦阴影 */
+  outline: none;
+}
+
+.form-item input::placeholder {
+  color: #9ca3af; /* 占位符灰色 */
+}
+
+/* 密码输入框容器（带显示/隐藏按钮） */
+.password-item {
+  position: relative;
+}
+
+.password-input-wrapper {
+  position: relative;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0.25rem;
+  transition: color 0.2s;
+}
+
+.toggle-password:hover {
+  color: #1f2937;
+}
+
+/* 记住我 + 忘记密码区域 */
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  font-size: 0.875rem;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.remember-me input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #1f2937; /* 复选框选中颜色 */
+  border-radius: 3px;
+}
+
+.forgot-password {
+  color: #3b82f6; /* 蓝色链接 */
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.forgot-password:hover {
+  color: #2563eb; /* hover时加深颜色 */
+}
+
+/* 登录按钮 */
+.login-btn {
+  width: 100%;
+  height: 50px;
+  background-color: #1f2937; /* 黑色主按钮 */
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-bottom: 1rem;
+}
+
+.login-btn:hover {
+  background-color: #374151; /* hover时深灰色 */
+}
+
+.login-btn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* 谷歌登录按钮 */
+.google-login-btn {
+  width: 100%;
+  height: 50px;
+  background-color: #f9fafb; /* 浅灰背景 */
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+  margin-bottom: 2.5rem;
+}
+
+.google-login-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+/* 注册链接 */
+.register-link {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.register-link a {
+  color: #3b82f6;
+  font-weight: 500;
+  text-decoration: none;
+  transition: text-decoration 0.2s;
+}
+
+.register-link a:hover {
+  text-decoration: underline;
+}
+
+/* 错误提示样式 */
+.error-tip {
+  height: 24px;
+  margin-bottom: 1rem;
+  color: #ef4444; /* 红色错误提示 */
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* 响应式适配（移动端） */
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column; /* 移动端改为上下布局 */
+  }
+
+  .login-illustration {
+    height: 280px; /* 固定插画高度 */
+    flex: none;
+  }
+
+  .form-wrapper {
+    max-width: 100%;
+  }
+
+  .welcome-title, .welcome-subtitle {
+    text-align: center;
+  }
+
+  .welcome-title {
+    font-size: 1.75rem;
+  }
+}
