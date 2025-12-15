@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Home - Media Share</title>
+  <title>Home - MediaShare</title>
   <!-- 引入Font Awesome图标库 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- 公共样式 -->
@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="home.css">
 </head>
 <body>
-  <!-- 彩色滚动背景（与登录页风格统一） -->
+  <!-- 彩色滚动背景 -->
   <div class="animated-bg">
     <div class="rect rect-1"></div>
     <div class="rect rect-2"></div>
@@ -31,8 +31,8 @@
 
       <!-- 搜索框 -->
       <div class="search-bar">
-        <input type="text" placeholder="搜索内容、标签或用户...">
-        <button type="button"><i class="fas fa-search"></i></button>
+        <input type="text" id="searchInput" placeholder="搜索内容、标签或用户...">
+        <button type="button" id="searchBtn"><i class="fas fa-search"></i></button>
       </div>
 
       <!-- 右侧功能区 -->
@@ -43,11 +43,11 @@
         <button class="action-btn" id="notificationBtn">
           <i class="fas fa-bell"></i>
         </button>
-        <button class="action-btn" id="friendsBtn"> <!-- 新增好友按钮 -->
-          <i class="fas fa-users"></i>
+        <button class="action-btn" id="friendsBtn">
+          <i class="fas fa-user-friends"></i>
         </button>
         <div class="user-avatar" id="userMenuBtn">
-          <img src="../../common/images/avatar-default.png" alt="用户头像">
+          <img src="../../common/images/avatar-default.png" alt="用户头像" id="userAvatar">
         </div>
       </div>
     </div>
@@ -58,9 +58,9 @@
     <div class="container">
       <div class="filter-tabs">
         <button class="tab active" data-filter="all">全部</button>
-        <button class="tab" data-filter="image">图片</button>
-        <button class="tab" data-filter="video">视频</button>
-        <button class="tab" data-filter="text">文字</button>
+        <button class="tab" data-filter="IMAGE">图片</button>
+        <button class="tab" data-filter="VIDEO">视频</button>
+        <button class="tab" data-filter="TEXT">文字</button>
       </div>
       
       <div class="filter-options">
@@ -72,12 +72,9 @@
         
         <div class="tag-filter">
           <span>标签:</span>
-          <div class="tags">
+          <div class="tags" id="tagList">
             <span class="tag active">全部</span>
-            <span class="tag">旅行</span>
-            <span class="tag">美食</span>
-            <span class="tag">生活</span>
-            <span class="tag">科技</span>
+            <!-- 动态加载标签 -->
           </div>
         </div>
       </div>
@@ -90,206 +87,24 @@
       <!-- 发布框 -->
       <div class="post-box">
         <div class="user-info">
-          <img src="../login/images/login.png" alt="用户头像">
+          <img src="../../common/images/avatar-default.png" alt="用户头像" id="postBoxAvatar">
           <button class="create-post-btn" id="createPostBtn">
             分享你的内容...
           </button>
         </div>
-        
-        <div class="post-types">
-          <button class="type-btn">
-            <i class="fas fa-image"></i> 图片
-          </button>
-          <button class="type-btn">
-            <i class="fas fa-video"></i> 视频
-          </button>
-          <button class="type-btn">
-            <i class="fas fa-font"></i> 文字
-          </button>
-        </div>
       </div>
 
-      <!-- 内容列表 -->
-      <div class="content-list">
-        <!-- 内容项1：图片类型 -->
-        <div class="content-item" data-type="image" data-tags="旅行,风景">
-          <div class="content-header">
-            <img src="../../common/images/avatar-1.png" alt="用户头像">
-            <div class="user-meta">
-              <h3 class="username">张小明</h3>
-              <p class="post-time">今天 09:24</p>
-            </div>
-            <div class="content-actions">
-              <button class="more-btn"><i class="fas fa-ellipsis-h"></i></button>
-            </div>
-          </div>
-          
-          <div class="content-body">
-            <p class="content-text">周末去了湖边露营，风景真的太美了！推荐给大家～ #旅行 #风景</p>
-            <div class="media-container">
-              <img src="../../common/images/post-1.jpg" alt="露营风景">
-            </div>
-          </div>
-          
-          <div class="content-footer">
-            <div class="rating">
-              <span class="score">4.8</span>
-              <div class="stars">
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star-half-alt"></i>
-              </div>
-              <button class="rate-btn">评分</button>
-            </div>
-            
-            <div class="interaction">
-              <button class="interact-btn comment-btn">
-                <i class="fas fa-comment"></i> 评论 (8)
-              </button>
-              <button class="interact-btn">
-                <i class="fas fa-share"></i> 分享
-              </button>
-            </div>
-          </div>
-          
-          <!-- 评论区 -->
-          <div class="comments">
-            <div class="comment-item">
-              <img src="../../common/images/avatar-2.png" alt="评论者头像">
-              <div class="comment-content">
-                <h4>李华</h4>
-                <p>这是哪里呀？看起来好舒服！</p>
-              </div>
-            </div>
-            <div class="comment-item">
-              <img src="../../common/images/avatar-1.png" alt="评论者头像">
-              <div class="comment-content">
-                <h4>张小明</h4>
-                <p>是城郊的月亮湖，开车大概1.5小时～</p>
-              </div>
-            </div>
-            
-            <div class="add-comment">
-              <input type="text" placeholder="添加评论...">
-              <button><i class="fas fa-paper-plane"></i></button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 内容项2：视频类型 -->
-        <div class="content-item" data-type="video" data-tags="美食">
-          <div class="content-header">
-            <img src="../../common/images/avatar-3.png" alt="用户头像">
-            <div class="user-meta">
-              <h3 class="username">王美食</h3>
-              <p class="post-time">昨天 18:36</p>
-            </div>
-            <div class="content-actions">
-              <button class="more-btn"><i class="fas fa-ellipsis-h"></i></button>
-            </div>
-          </div>
-          
-          <div class="content-body">
-            <p class="content-text">今天尝试做了红烧肉，第一次做居然成功了！做法放在最后～ #美食</p>
-            <div class="media-container video-container">
-              <video controls poster="../../common/images/video-cover.jpg">
-                <source src="#" type="video/mp4">
-                您的浏览器不支持视频播放
-              </video>
-            </div>
-          </div>
-          
-          <div class="content-footer">
-            <div class="rating">
-              <span class="score">4.9</span>
-              <div class="stars">
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-              </div>
-              <button class="rate-btn">评分</button>
-            </div>
-            
-            <div class="interaction">
-              <button class="interact-btn comment-btn">
-                <i class="fas fa-comment"></i> 评论 (24)
-              </button>
-              <button class="interact-btn">
-                <i class="fas fa-share"></i> 分享
-              </button>
-            </div>
-          </div>
-          
-          <!-- 评论区（默认折叠） -->
-          <div class="comments collapsed">
-            <div class="comment-item">
-              <img src="../../common/images/avatar-4.png" alt="评论者头像">
-              <div class="comment-content">
-                <h4>赵小厨</h4>
-                <p>色泽看起来太棒了！求具体做法！</p>
-              </div>
-            </div>
-            
-            <div class="add-comment">
-              <input type="text" placeholder="添加评论...">
-              <button><i class="fas fa-paper-plane"></i></button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 内容项3：文字类型（自己发布的内容，带编辑/删除按钮） -->
-        <div class="content-item own-content" data-type="text" data-tags="生活">
-          <div class="content-header">
-            <img src="../../common/images/avatar-default.png" alt="用户头像">
-            <div class="user-meta">
-              <h3 class="username">我</h3>
-              <p class="post-time">3天前</p>
-            </div>
-            <div class="content-actions own-actions">
-              <button class="edit-btn"><i class="fas fa-edit"></i> 编辑</button>
-              <button class="delete-btn"><i class="fas fa-trash"></i> 删除</button>
-            </div>
-          </div>
-          
-          <div class="content-body">
-            <p class="content-text">最近读完了《人类简史》，感触很深。书中对人类发展历程的解读角度很独特，尤其是关于认知革命和农业革命的部分，完全颠覆了我之前的认知。强烈推荐给喜欢历史和哲学的朋友～ #生活 #阅读</p>
-          </div>
-          
-          <div class="content-footer">
-            <div class="rating">
-              <span class="score">4.7</span>
-              <div class="stars">
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star-half-alt"></i>
-              </div>
-              <button class="rate-btn">评分</button>
-            </div>
-            
-            <div class="interaction">
-              <button class="interact-btn comment-btn">
-                <i class="fas fa-comment"></i> 评论 (5)
-              </button>
-              <button class="interact-btn">
-                <i class="fas fa-share"></i> 分享
-              </button>
-            </div>
-          </div>
-        </div>
+      <!-- 内容列表容器 -->
+      <div class="content-list" id="contentList">
+        <!-- 动态加载内容卡片 -->
       </div>
 
       <!-- 加载更多 -->
-      <button class="load-more-btn">加载更多</button>
+      <button class="load-more-btn" id="loadMoreBtn">加载更多</button>
     </div>
   </main>
 
-  <!-- 发布内容弹窗（默认隐藏） -->
+  <!-- 发布内容弹窗 -->
   <div class="modal post-modal" id="postModal">
     <div class="modal-overlay"></div>
     <div class="modal-content">
@@ -300,20 +115,25 @@
       
       <div class="modal-body">
         <div class="post-form">
-          <textarea placeholder="分享你的想法..."></textarea>
+          <textarea id="postText" placeholder="分享你的想法..."></textarea>
           
           <div class="media-upload">
-            <button class="upload-btn">
+            <label class="upload-btn">
               <i class="fas fa-image"></i> 上传图片
-            </button>
-            <button class="upload-btn">
+              <input type="file" id="uploadImage" accept="image/*" multiple style="display:none;">
+            </label>
+            <label class="upload-btn">
               <i class="fas fa-video"></i> 上传视频
-            </button>
+              <input type="file" id="uploadVideo" accept="video/*" style="display:none;">
+            </label>
           </div>
+
+          <!-- 图片预览区 -->
+          <div class="image-preview" id="imagePreview"></div>
           
           <div class="tags-input">
             <label>标签（用逗号分隔）</label>
-            <input type="text" placeholder="例如：旅行,美食">
+            <input type="text" id="postTags" placeholder="例如：旅行,美食">
           </div>
         </div>
       </div>
@@ -326,41 +146,37 @@
   </div>
 
   <!-- 好友侧边栏 -->
-<div class="friends-sidebar" id="friendsSidebar">
-  <div class="sidebar-header">
-    <h2>好友</h2>
-    <button class="close-sidebar" id="closeFriendsSidebar"><i class="fas fa-times"></i></button>
-  </div>
-  
-  <!-- 好友请求 -->
-  <div class="section">
-    <h3>好友请求 <span class="request-count">(2)</span></h3>
-    <div class="friend-requests" id="friendRequests">
-      <!-- 模拟请求将在这里插入 -->
+  <div class="friends-sidebar" id="friendsSidebar">
+    <div class="sidebar-header">
+      <h2>好友</h2>
+      <button class="close-sidebar" id="closeFriendsSidebar"><i class="fas fa-times"></i></button>
+    </div>
+    
+    <!-- 好友请求 -->
+    <div class="section">
+      <h3>好友请求 <span class="request-count">(0)</span></h3>
+      <div class="friend-requests" id="friendRequests"></div>
+    </div>
+    
+    <!-- 搜索用户 -->
+    <div class="section">
+      <h3>查找用户</h3>
+      <div class="search-user">
+        <input type="text" id="searchUserInput" placeholder="输入用户名...">
+        <button id="searchUserBtn"><i class="fas fa-search"></i></button>
+      </div>
+      <div class="search-results" id="searchResults"></div>
+    </div>
+    
+    <!-- 我的好友列表 -->
+    <div class="section">
+      <h3>我的好友 <span class="friend-count">(0)</span></h3>
+      <div class="friends-list" id="friendsList"></div>
     </div>
   </div>
-  
-  <!-- 搜索用户 -->
-  <div class="section">
-    <h3>查找用户</h3>
-    <div class="search-user">
-      <input type="text" id="searchUserInput" placeholder="输入用户名...">
-      <button id="searchUserBtn"><i class="fas fa-search"></i></button>
-    </div>
-    <div class="search-results" id="searchResults"></div>
-  </div>
-  
-  <!-- 我的好友列表 -->
-  <div class="section">
-    <h3>我的好友 <span class="friend-count">(8)</span></h3>
-    <div class="friends-list" id="friendsList">
-      <!-- 模拟好友将在这里插入 -->
-    </div>
-  </div>
-</div>
 
-<!-- 侧边栏遮罩 -->
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <!-- 侧边栏遮罩 -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
   <!-- 引入JS -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>

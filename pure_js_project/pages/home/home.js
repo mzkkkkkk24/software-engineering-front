@@ -1,53 +1,405 @@
-// home.js - 纯前端模拟版本（用于调试和美化预览）
+let currentPage = 1;
+const pageSize = 10;
+let hasMore = true;
+let currentUser = null; // 当前登录用户
 
-const mockContents = [
-  {
-    id: 1,
-    type: 'image',
-    username: '张小明',
-    avatar: '../../common/images/avatar-1.png',
-    time: '今天 09:24',
-    text: '周末去了湖边露营，风景真的太美了！推荐给大家～ #旅行 #风景',
-    mediaUrl: '../../common/images/post-1.jpg',
-    score: 4.8,
-    comments: 8,
-    tags: ['旅行', '风景'],
-    isOwn: false
-  },
-  {
-    id: 2,
-    type: 'video',
-    username: '王美食',
-    avatar: '../../common/images/avatar-3.png',
-    time: '昨天 18:36',
-    text: '今天尝试做了红烧肉，第一次做居然成功了！做法放在最后～ #美食',
-    mediaUrl: 'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4', // 示例视频
-    coverUrl: '../../common/images/video-cover.jpg',
-    score: 4.9,
-    comments: 24,
-    tags: ['美食'],
-    isOwn: false
-  },
-  {
-    id: 3,
-    type: 'text',
-    username: '我',
-    avatar: '../../common/images/avatar-default.png',
-    time: '3天前',
-    text: '最近读完了《人类简史》，感触很深。书中对人类发展历程的解读角度很独特，尤其是关于认知革命和农业革命的部分，完全颠覆了我之前的认知。强烈推荐给喜欢历史和哲学的朋友～ #生活 #阅读',
-    score: 4.7,
-    comments: 5,
-    tags: ['生活', '阅读'],
-    isOwn: true
+document.addEventListener('DOMContentLoaded', async function() {
+  // 检查登录状态
+  const token = localStorage.getItem('token');
+  if (!token) {
+    window.location.href = '../../login/login.html';
+    return;
   }
-];
 
-document.addEventListener('DOMContentLoaded', function() {
+  // 加载用户信息
+  await loadCurrentUser();
+
+  // 初始化
   initAnimatedBackground();
-  renderContentList(mockContents);
   initInteractions();
+  loadContentList(true); // 初次加载
 });
 
+async function loadCurrentUser() {
+  try {
+    const res = await axios.get('/api/user/info');
+    if (res.data.code === 200) {
+      currentUser = res.data.data;
+      // 更新头像
+      document.querySelector('#userMenuBtn img').src = currentUser.avatar || '../../common/images/avatar-default.png';
+    }
+  } catch (err) {
+    console.error('获取用户信息失败', err);
+    if (err.response?.status === 401) {
+      localStorage.clear();
+      window.location.href = '../../login/login.html';
+    }
+  }
+}
+
+// 加载内容列表（支持分页）
+async function loadContentList(isRefresh = false) {
+  if (isRefresh) {
+    currentPage = 1;
+    hasMore = true;
+    document.getElementById('contentList').innerHTML = '';
+  }
+
+  if (!hasMore) return;
+
+  try {
+    const res = await axios.get('/api/content/list', {
+      params: { page: currentPage, size: pageSize }
+    });
+
+    if (res.data.code === 200) {
+      const { records, total, pages } = res.data.data;
+      renderContentList(records);
+
+      currentPage++;
+      hasMore = currentPage <= pages;
+      document.getElementById('loadMoreBtn').style.display = hasMore ? 'block' : 'none';
+    }
+  } catch (err) {
+    console.error('加载内容失败', err);
+  }
+}
+
+// 渲染内容
+function renderContentList(contents) {
+  const list = document.getElementById('contentList');
+
+  contents.forEach(content => {
+    const item = createContentElement(content);
+    list.appendChild(item);
+  });
+}
+
+function createContentElement(content) {
+  const item = document.createElement('div');
+  item.className = 'content-item';
+  item.dataset.id = content.id;
+
+  const isOwn = currentUser && content.userId === currentUser.id;
+
+  let mediaHtml = '';
+  if (content.type === 'IMAGE' && content.mediaUrls?.length) {
+    mediaHtml = content.mediaUrls.map(url => 
+      `<div class="media-container"><img src="${url}" alt="图片"></div>`
+    ).join('');
+  } else if (content.type === 'VIDEO' && content.mediaUrls?.length) {
+    mediaHtml = `<div class="media-container video-container">
+      <video controls><source src="${content.mediaUrls[0]}" type="video/mp4"></video>
+    </div>`;
+  }
+
+  const actionsHtml = isOwn ? `
+    <div class="content-actions own-actions">
+      <button class="edit-btn"><i class="fas fa-edit"></i> 编辑</button>
+      <button class="delete-btn" data-id="${content.id}"><i class="fas fa-trash"></i> 删除</button>
+    </div>` : '';
+
+  item.innerHTML = `
+    <div class="content-header">
+      <img src="${content.avatar || '../../common/images/avatar-default.png'}" alt="头像" class="clickable-avatar" data-userid="${content.userId}">
+      <div class="user-meta">
+        <h3 class="username clickable-avatar" data-userid="${content.userId}">${content.nickname || content.username}</h3>
+        <p class="post-time">${formatTime(content.createTime)}</p>
+      </div>
+      ${actionsHtml}
+    </div>
+    <div class="content-body">
+      <p class="content-text">${content.text || ''}</p>
+      ${mediaHtml}
+      <div class="tags">
+        ${content.tags?.map(tag => `<span class="tag">${tag}</span>`).join('') || ''}
+      </div>
+    </div>
+    <div class="content-footer">
+      <div class="rating">
+        <span class="score">${content.score || '0.0'}</span>
+        <div class="stars">${generateStars(content.score || 0)}</div>
+      </div>
+      <div class="interaction">
+        <button class="interact-btn comment-btn">
+          <i class="fas fa-comment"></i> 评论 (${content.commentCount || 0})
+        </button>
+      </div>
+    </div>
+  `;
+
+  // 点击头像跳转个人主页
+  item.querySelectorAll('.clickable-avatar').forEach(el => {
+    el.onclick = () => {
+      const userId = el.dataset.userid;
+      const url = userId == currentUser?.id ? 'current' : userId;
+      window.location.href = `../user-detail/user-detail.html?userId=${url}`;
+    };
+  });
+
+  // 删除内容
+  const deleteBtn = item.querySelector('.delete-btn');
+  if (deleteBtn) {
+    deleteBtn.onclick = async () => {
+      if (confirm('确定删除这条内容吗？')) {
+        try {
+          await axios.delete(`/api/content/${content.id}`);
+          item.remove();
+          alert('删除成功');
+        } catch (err) {
+          alert('删除失败：' + (err.response?.data?.message || '未知错误'));
+        }
+      }
+    };
+  }
+
+  return item;
+}
+
+function generateStars(score) {
+  let html = '';
+  const full = Math.floor(score);
+  const half = score - full >= 0.5;
+  for (let i = 0; i < 5; i++) {
+    if (i < full) html += '<i class="fas fa-star"></i>';
+    else if (i === full && half) html += '<i class="fas fa-star-half-alt"></i>';
+    else html += '<i class="far fa-star"></i>';
+  }
+  return html;
+}
+
+function formatTime(timeStr) {
+  // 简单格式化，后续可用 dayjs
+  const date = new Date(timeStr);
+  const now = new Date();
+  const diff = now - date;
+  if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+  return date.toLocaleDateString();
+}
+
+// 发布内容（支持多图上传）
+async function handlePostSubmit() {
+  const textarea = document.querySelector('.post-modal textarea');
+  const tagInput = document.querySelector('.tags-input input');
+  const text = textarea.value.trim();
+  const tags = tagInput.value.split(',').map(t => t.trim()).filter(Boolean);
+
+  if (!text && selectedFiles.length === 0) {
+    alert('请填写内容或上传媒体');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('text', text);
+  formData.append('type', selectedFiles.length > 0 ? (selectedFiles[0].type.startsWith('video') ? 'VIDEO' : 'IMAGE') : 'TEXT');
+  tags.forEach(tag => formData.append('tags', tag));
+  selectedFiles.forEach(file => formData.append('files', file));
+
+  try {
+    const res = await axios.post('/api/content', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+
+    if (res.data.code === 200) {
+      alert('发布成功！');
+      closePostModal();
+      loadContentList(true); // 刷新列表
+    }
+  } catch (err) {
+    alert('发布失败：' + (err.response?.data?.message || '未知错误'));
+  }
+}
+
+let selectedFiles = [];
+
+// 初始化交互
+function initInteractions() {
+  // 发布模态框
+  document.getElementById('createPostBtn').onclick = () => {
+    document.getElementById('postModal').classList.add('show');
+  };
+
+  const closeModal = () => {
+    document.getElementById('postModal').classList.remove('show');
+    document.querySelector('.post-modal textarea').value = '';
+    document.querySelector('.tags-input input').value = '';
+    selectedFiles = [];
+    document.getElementById('imagePreview').innerHTML = '';
+  };
+
+  document.querySelectorAll('#closeModal, #cancelPost, .modal-overlay').forEach(el => {
+    el.onclick = closeModal;
+  });
+
+  // 上传图片/视频预览（支持多选）
+  document.querySelectorAll('.upload-btn input[type="file"]').forEach(input => {
+    input.onchange = (e) => {
+      selectedFiles = [...selectedFiles, ...Array.from(e.target.files)];
+      const preview = document.getElementById('imagePreview');
+      Array.from(e.target.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const div = document.createElement('div');
+          div.className = 'preview-item';
+          div.innerHTML = `
+            <img src="${ev.target.result}">
+            <button type="button" class="remove">×</button>
+          `;
+          div.querySelector('.remove').onclick = () => {
+            selectedFiles = selectedFiles.filter(f => f.name !== file.name);
+            div.remove();
+          };
+          preview.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+      });
+    };
+  });
+
+  document.getElementById('submitPost').onclick = handlePostSubmit;
+
+  // 加载更多
+  document.getElementById('loadMoreBtn').onclick = () => loadContentList();
+
+  // 好友侧边栏
+  initFriendsSidebar();
+}
+
+// 好友侧边栏（完整对接）
+async function initFriendsSidebar() {
+  const sidebar = document.getElementById('friendsSidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+
+  document.getElementById('friendsBtn').onclick = async () => {
+    sidebar.classList.add('show');
+    overlay.classList.add('show');
+    await loadFriendRequests();
+    await loadFriendsList();
+  };
+
+  [document.getElementById('closeFriendsSidebar'), overlay].forEach(el => {
+    el.onclick = () => {
+      sidebar.classList.remove('show');
+      overlay.classList.remove('show');
+    };
+  });
+
+  // 搜索用户 + 添加好友
+  document.getElementById('searchUserBtn').onclick = async () => {
+    const keyword = document.getElementById('searchUserInput').value.trim();
+    if (!keyword) return;
+
+    try {
+      const res = await axios.get('/api/user/search', { params: { keyword } });
+      renderSearchResults(res.data.data || []);
+    } catch (err) {
+      alert('搜索失败');
+    }
+  };
+}
+
+async function loadFriendRequests() {
+  try {
+    const res = await axios.get('/api/friend/pending');
+    if (res.data.code === 200) {
+      renderFriendRequests(res.data.data);
+    }
+  } catch (err) {
+    console.error('加载好友请求失败', err);
+  }
+}
+
+function renderFriendRequests(requests) {
+  const container = document.getElementById('friendRequests');
+  container.innerHTML = '';
+  requests.forEach(req => {
+    const item = document.createElement('div');
+    item.className = 'user-item';
+    item.innerHTML = `
+      <img src="${req.avatar || '../../common/images/avatar-default.png'}">
+      <div class="info">
+        <h4>${req.nickname || req.username}</h4>
+        <p>请求添加好友</p>
+      </div>
+      <div>
+        <button onclick="handleFriendAction('accept', ${req.id})">接受</button>
+        <button class="reject" onclick="handleFriendAction('reject', ${req.id})">拒绝</button>
+      </div>
+    `;
+    container.appendChild(item);
+  });
+  document.querySelector('.request-count').textContent = `(${requests.length})`;
+}
+
+async function loadFriendsList() {
+  try {
+    const res = await axios.get('/api/friend/list');
+    if (res.data.code === 200) {
+      renderFriendsList(res.data.data);
+    }
+  } catch (err) {
+    console.error('加载好友列表失败', err);
+  }
+}
+
+function renderFriendsList(friends) {
+  const container = document.getElementById('friendsList');
+  container.innerHTML = '';
+  friends.forEach(friend => {
+    const item = document.createElement('div');
+    item.className = 'user-item';
+    item.innerHTML = `
+      <img src="${friend.avatar || '../../common/images/avatar-default.png'}">
+      <div class="info">
+        <h4>${friend.nickname || friend.username}</h4>
+        <p>已添加</p>
+      </div>
+    `;
+    container.appendChild(item);
+  });
+  document.querySelector('.friend-count').textContent = `(${friends.length})`;
+}
+
+// 处理好友请求
+window.handleFriendAction = async (action, friendId) => {
+  try {
+    const url = action === 'accept' ? `/api/friend/accept/${friendId}` : `/api/friend/reject/${friendId}`;
+    await axios.post(url);
+    alert(action === 'accept' ? '已添加好友' : '已拒绝');
+    loadFriendRequests();
+    loadFriendsList();
+  } catch (err) {
+    alert('操作失败');
+  }
+};
+
+// 搜索用户结果
+function renderSearchResults(users) {
+  const container = document.getElementById('searchResults');
+  container.innerHTML = '';
+  users.forEach(user => {
+    const item = document.createElement('div');
+    item.className = 'user-item';
+    item.innerHTML = `
+      <img src="${user.avatar || '../../common/images/avatar-default.png'}">
+      <div class="info"><h4>${user.nickname || user.username}</h4></div>
+      <button onclick="addFriend(${user.id})">添加好友</button>
+    `;
+    container.appendChild(item);
+  });
+}
+
+window.addFriend = async (friendId) => {
+  try {
+    await axios.post('/api/friend', { friendId });
+    alert('好友请求已发送');
+  } catch (err) {
+    alert('发送失败：' + (err.response?.data?.message || ''));
+  }
+};
+
+// 动画背景
 function initAnimatedBackground() {
   const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
   document.querySelectorAll('.rect').forEach((rect, i) => {
@@ -58,270 +410,4 @@ function initAnimatedBackground() {
     rect.style.top = `${Math.random() * 100}vh`;
     rect.style.animationDelay = `${Math.random() * 10}s`;
   });
-}
-
-function renderContentList(contents) {
-  const list = document.querySelector('.content-list');
-  list.innerHTML = '';
-  contents.forEach(content => {
-    list.appendChild(createContentElement(content));
-  });
-}
-
-function createContentElement(content) {
-  const item = document.createElement('div');
-  item.className = 'content-item';
-  item.dataset.type = content.type;
-  item.dataset.tags = content.tags.join(',');
-
-  let mediaHtml = '';
-  if (content.type === 'image') {
-    mediaHtml = `<div class="media-container"><img src="${content.mediaUrl}" alt="图片"></div>`;
-  } else if (content.type === 'video') {
-    mediaHtml = `<div class="media-container video-container">
-      <video controls poster="${content.coverUrl || ''}">
-        <source src="${content.mediaUrl}" type="video/mp4">
-      </video>
-    </div>`;
-  }
-
-  const actionsHtml = content.isOwn ?
-    `<div class="content-actions own-actions">
-      <button class="edit-btn"><i class="fas fa-edit"></i> 编辑</button>
-      <button class="delete-btn"><i class="fas fa-trash"></i> 删除</button>
-    </div>` :
-    `<div class="content-actions"><button class="more-btn"><i class="fas fa-ellipsis-h"></i></button></div>`;
-
-  item.innerHTML = `
-    <div class="content-header">
-      <img src="${content.avatar}" alt="头像">
-      <div class="user-meta">
-        <h3 class="username">${content.username}</h3>
-        <p class="post-time">${content.time}</p>
-      </div>
-      ${actionsHtml}
-    </div>
-    <div class="content-body">
-      <p class="content-text">${content.text}</p>
-      ${mediaHtml}
-    </div>
-    <div class="content-footer">
-      <div class="rating">
-        <span class="score">${content.score}</span>
-        <div class="stars">${generateStars(content.score)}</div>
-        <button class="rate-btn">评分</button>
-      </div>
-      <div class="interaction">
-        <button class="interact-btn comment-btn"><i class="fas fa-comment"></i> 评论 (${content.comments})</button>
-        <button class="interact-btn"><i class="fas fa-share"></i> 分享</button>
-      </div>
-    </div>
-    <div class="comments collapsed">
-      <div class="add-comment">
-        <input type="text" placeholder="添加评论...">
-        <button><i class="fas fa-paper-plane"></i></button>
-      </div>
-    </div>
-  `;
-  return item;
-}
-
-function generateStars(score) {
-  let html = '';
-  for (let i = 1; i <= 5; i++) {
-    if (i <= score) html += '<i class="fas fa-star"></i>';
-    else if (i - 0.5 <= score) html += '<i class="fas fa-star-half-alt"></i>';
-    else html += '<i class="far fa-star"></i>';
-  }
-  return html;
-}
-
-function initInteractions() {
-  // 发布模态框
-  const modal = document.getElementById('postModal');
-  document.getElementById('createPostBtn').onclick = () => modal.classList.add('show');
-  document.querySelectorAll('#closeModal, #cancelPost, .modal-overlay').forEach(el => {
-    el.onclick = () => modal.classList.remove('show');
-  });
-
-  // 模拟发布
-  document.getElementById('submitPost').onclick = () => {
-    const text = modal.querySelector('textarea').value.trim();
-    if (text) {
-      alert('发布成功（模拟）');
-      modal.classList.remove('show');
-      modal.querySelector('textarea').value = '';
-    }
-  };
-
-  // 评论展开
-  document.querySelectorAll('.comment-btn').forEach(btn => {
-    btn.onclick = () => {
-      const comments = btn.closest('.content-item').querySelector('.comments');
-      comments.classList.toggle('collapsed');
-    };
-  });
-
-  // 筛选（模拟）
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.onclick = () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-    };
-  });
-
-  document.querySelectorAll('.tag').forEach(tag => {
-    tag.onclick = () => {
-      document.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
-      tag.classList.add('active');
-    };
-  });
-  // 好友功能模拟数据
-const mockFriendRequests = [
-  { id: 1, username: '李华', avatar: '../../common/images/avatar-2.png' },
-  { id: 2, username: '赵小厨', avatar: '../../common/images/avatar-4.png' }
-];
-
-const mockFriends = [
-  { id: 3, username: '张小明', avatar: '../../common/images/avatar-1.png' },
-  { id: 4, username: '王美食', avatar: '../../common/images/avatar-3.png' },
-  // ... 可继续添加
-];
-
-const mockSearchUsers = [
-  { id: 5, username: '陈设计', avatar: '../../common/images/avatar-default.png', isFriend: false },
-  { id: 6, username: '刘摄影', avatar: '../../common/images/avatar-1.png', isFriend: true },
-];
-
-// 打开/关闭侧边栏
-const friendsBtn = document.getElementById('friendsBtn');
-const sidebar = document.getElementById('friendsSidebar');
-const overlay = document.getElementById('sidebarOverlay');
-const closeSidebar = document.getElementById('closeFriendsSidebar');
-
-friendsBtn.onclick = () => {
-  sidebar.classList.add('show');
-  overlay.classList.add('show');
-  renderFriendRequests();
-  renderFriendsList();
-};
- 
-[closeSidebar, overlay].forEach(el => {
-  el.onclick = () => {
-    sidebar.classList.remove('show');
-    overlay.classList.remove('show');
-  };
-});
-
-// 渲染好友请求
-function renderFriendRequests() {
-  const container = document.getElementById('friendRequests');
-  container.innerHTML = '';
-  mockFriendRequests.forEach(req => {
-    const item = document.createElement('div');
-    item.className = 'user-item';
-    item.innerHTML = `
-      <img src="${req.avatar}" alt="${req.username}">
-      <div class="info">
-        <h4>${req.username}</h4>
-        <p>请求添加你为好友</p>
-      </div>
-      <div>
-        <button>接受</button>
-        <button class="reject">拒绝</button>
-      </div>
-    `;
-    // 模拟接受
-    item.querySelector('button:not(.reject)').onclick = () => {
-      alert(`已接受 ${req.username} 的好友请求（模拟）`);
-      mockFriends.push(req);
-      mockFriendRequests = mockFriendRequests.filter(r => r.id !== req.id);
-      renderFriendRequests();
-      renderFriendsList();
-    };
-    container.appendChild(item);
-  });
-  document.querySelector('.request-count').textContent = `(${mockFriendRequests.length})`;
-}
-
-// 渲染好友列表
-function renderFriendsList() {
-  const container = document.getElementById('friendsList');
-  container.innerHTML = '';
-  mockFriends.forEach(friend => {
-    const item = document.createElement('div');
-    item.className = 'user-item';
-    item.innerHTML = `
-      <img src="${friend.avatar}" alt="${friend.username}">
-      <div class="info">
-        <h4>${friend.username}</h4>
-        <p>已添加</p>
-      </div>
-    `;
-    container.appendChild(item);
-  });
-  document.querySelector('.friend-count').textContent = `(${mockFriends.length})`;
-}
-
-// 搜索用户
-document.getElementById('searchUserBtn').onclick = () => {
-  const keyword = document.getElementById('searchUserInput').value.trim().toLowerCase();
-  const resultsContainer = document.getElementById('searchResults');
-  resultsContainer.innerHTML = '';
-  
-  const filtered = mockSearchUsers.filter(u => u.username.toLowerCase().includes(keyword) || keyword === '');
-  
-  if (filtered.length === 0) {
-    resultsContainer.innerHTML = '<p style="text-align:center;color:#94a3b8;">未找到用户</p>';
-    return;
-  }
-  
-  filtered.forEach(user => {
-    const item = document.createElement('div');
-    item.className = 'user-item';
-    item.innerHTML = `
-      <img src="${user.avatar}" alt="${user.username}">
-      <div class="info">
-        <h4>${user.username}</h4>
-      </div>
-      <button class="${user.isFriend ? 'added' : ''}">
-        ${user.isFriend ? '已添加' : '添加好友'}
-      </button>
-    `;
-    // 模拟添加
-    if (!user.isFriend) {
-      item.querySelector('button').onclick = () => {
-        alert(`已发送好友请求给 ${user.username}（模拟）`);
-        item.querySelector('button').textContent = '请求已发送';
-        item.querySelector('button').disabled = true;
-      };
-    }
-    resultsContainer.appendChild(item);
-  });
-};
-
-// 点击右上角头像跳转到个人主页
-document.getElementById('userMenuBtn').onclick = () => {
-  window.location.href = '../user-detail/user-detail.html'; // 自己的主页
-};
-
-// 点击内容中的用户头像，也可跳转（示例）
-document.querySelectorAll('.content-item').forEach(item => {
-  const avatar = item.querySelector('.content-header img');
-  const usernameEl = item.querySelector('.user-meta h3');
-  const username = usernameEl.textContent.trim();
-
-  [avatar, usernameEl].forEach(el => {
-    el.style.cursor = 'pointer';
-    el.onclick = () => {
-      if (username === '我') {
-        window.location.href = 'user-detail.html?userId=current';
-      } else {
-        // 实际项目中应传入真实 userId
-        window.location.href = `user-detail.html?userId=${encodeURIComponent(username)}`;
-      }
-    };
-  });
-});
-
 }

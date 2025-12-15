@@ -1,62 +1,97 @@
-// admin.js
+// admin.js - 完整对接管理员接口
 
-// 模拟数据
-const mockUsers = [
-  { id: 1, username: '张小明', avatar: '../../common/images/avatar-1.png', registerTime: '2024-05-12', postCount: 48 },
-  { id: 2, username: '李华', avatar: '../../common/images/avatar-2.png', registerTime: '2024-06-20', postCount: 23 },
-  { id: 3, username: '王美食', avatar: '../../common/images/avatar-3.png', registerTime: '2024-03-15', postCount: 89 },
-  { id: 4, username: '赵小厨', avatar: '../../common/images/avatar-4.png', registerTime: '2024-08-01', postCount: 12 },
-  // 可继续添加
-];
-
-const mockContents = [
-  { id: 101, userId: 1, username: '张小明', avatar: '../../common/images/avatar-1.png', text: '周末去了湖边露营，风景真的太美了！', mediaUrl: '../../common/images/post-1.jpg', mediaType: 'image', time: '2025-12-10 09:24' },
-  { id: 102, userId: 3, username: '王美食', avatar: '../../common/images/avatar-3.png', text: '红烧肉成功！', mediaUrl: 'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4', mediaType: 'video', time: '2025-12-09 18:36' },
-  // 可继续添加
-];
-
-let currentUserPage = 1;
-let currentContentPage = 1;
+let userPage = 1;
+let contentPage = 1;
 const pageSize = 10;
+let userHasMore = true;
+let contentHasMore = true;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // 检查管理员权限
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+  if (!userInfo || userInfo.role !== 'ADMIN') {
+    alert('权限不足，请使用管理员账号登录');
+    window.location.href = '../login/login.html';
+    return;
+  }
+
+  // 退出登录
+  document.getElementById('logoutBtn').onclick = () => {
+    if (confirm('确定退出登录？')) {
+      localStorage.clear();
+      window.location.href = '../login/login.html';
+    }
+  };
+
   // 侧边栏切换
   document.querySelectorAll('.menu-item').forEach(item => {
-    item.addEventListener('click', () => {
+    item.addEventListener('click', async () => {
       document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
       item.classList.add('active');
-      
+
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       document.getElementById(item.dataset.tab + '-tab').classList.add('active');
-      
-      if (item.dataset.tab === 'users') renderUsers();
-      if (item.dataset.tab === 'contents') renderContents();
+
+      if (item.dataset.tab === 'users') {
+        userPage = 1;
+        userHasMore = true;
+        await loadUsers();
+      } else if (item.dataset.tab === 'contents') {
+        contentPage = 1;
+        contentHasMore = true;
+        await loadContents();
+      }
     });
   });
 
   // 默认加载用户管理
-  renderUsers();
+  await loadUsers();
 
-  // 搜索功能（简单前端过滤）
-  document.getElementById('userSearch').addEventListener('input', renderUsers);
-  document.getElementById('contentSearch').addEventListener('input', renderContents);
+  // 搜索
+  document.getElementById('userSearch').addEventListener('input', () => { userPage = 1; loadUsers(); });
+  document.getElementById('contentSearch').addEventListener('input', () => { contentPage = 1; loadContents(); });
 });
 
-// 渲染用户列表
-function renderUsers() {
-  const keyword = document.getElementById('userSearch').value.toLowerCase();
-  const filtered = mockUsers.filter(u => u.username.toLowerCase().includes(keyword));
-  
+// 加载用户列表
+async function loadUsers() {
+  const keyword = document.getElementById('userSearch').value.trim();
+  const tbody = document.querySelector('#usersTable tbody');
+  tbody.innerHTML = '<tr><td colspan="5">加载中...</td></tr>';
+
+  try {
+    const res = await axios.get('/api/admin/users', {
+      params: { page: userPage, size: pageSize, keyword }
+    });
+
+    if (res.data.code === 200) {
+      const { records, pages } = res.data.data;
+      renderUsers(records);
+      userHasMore = userPage < pages;
+      userPage++;
+      renderPagination('usersPagination', userPage - 1, pages, loadUsers);
+    }
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="5">加载失败</td></tr>';
+    console.error(err);
+  }
+}
+
+function renderUsers(users) {
   const tbody = document.querySelector('#usersTable tbody');
   tbody.innerHTML = '';
-  
-  filtered.forEach(user => {
+
+  if (users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5">暂无用户</td></tr>';
+    return;
+  }
+
+  users.forEach(user => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><img src="${user.avatar}" alt="${user.username}"></td>
+      <td><img src="${user.avatar || '../../common/images/avatar-default.png'}" alt="${user.username}"></td>
       <td>${user.username}</td>
-      <td>${user.registerTime}</td>
-      <td>${user.postCount}</td>
+      <td>${user.registerTime || user.createTime}</td>
+      <td>${user.postCount || 0}</td>
       <td><button class="delete-btn" data-id="${user.id}">删除用户</button></td>
     `;
     tbody.appendChild(tr);
@@ -64,46 +99,68 @@ function renderUsers() {
 
   // 删除用户
   document.querySelectorAll('#usersTable .delete-btn').forEach(btn => {
-    btn.onclick = () => {
-      if (confirm('确定要删除该用户及其所有内容吗？此操作不可恢复！')) {
-        const id = btn.dataset.id;
-        // 实际项目：axios.delete(`/api/admin/user/${id}`)
-        mockUsers = mockUsers.filter(u => u.id != id);
-        mockContents = mockContents.filter(c => c.userId != id);
-        alert('用户已删除（模拟）');
-        renderUsers();
-        renderContents();
+    btn.onclick = async () => {
+      if (confirm('确定删除该用户及其所有内容？此操作不可恢复！')) {
+        try {
+          await axios.delete(`/api/admin/user/${btn.dataset.id}`);
+          alert('用户已删除');
+          loadUsers();
+        } catch (err) {
+          alert('删除失败：' + (err.response?.data?.message || '未知错误'));
+        }
       }
     };
   });
 }
 
-// 渲染内容列表
-function renderContents() {
-  const keyword = document.getElementById('contentSearch').value.toLowerCase();
-  const filtered = mockContents.filter(c => 
-    c.text.toLowerCase().includes(keyword) || 
-    c.username.toLowerCase().includes(keyword)
-  );
+// 加载内容列表
+async function loadContents() {
+  const keyword = document.getElementById('contentSearch').value.trim();
+  const container = document.getElementById('contentsList');
+  container.innerHTML = '<p style="grid-column:1/-1;text-align:center;">加载中...</p>';
 
+  try {
+    const res = await axios.get('/api/admin/contents', {
+      params: { page: contentPage, size: pageSize, keyword }
+    });
+
+    if (res.data.code === 200) {
+      const { records, pages } = res.data.data;
+      renderContents(records);
+      contentHasMore = contentPage < pages;
+      contentPage++;
+      renderPagination('contentsPagination', contentPage - 1, pages, loadContents);
+    }
+  } catch (err) {
+    container.innerHTML = '<p style="grid-column:1/-1;text-align:center;">加载失败</p>';
+    console.error(err);
+  }
+}
+
+function renderContents(contents) {
   const container = document.getElementById('contentsList');
   container.innerHTML = '';
 
-  filtered.forEach(content => {
+  if (contents.length === 0) {
+    container.innerHTML = '<p style="grid-column:1/-1;text-align:center;">暂无内容</p>';
+    return;
+  }
+
+  contents.forEach(content => {
     const card = document.createElement('div');
     card.className = 'content-card';
     card.innerHTML = `
       <div class="header">
-        <img src="${content.avatar}" alt="${content.username}">
+        <img src="${content.avatar || '../../common/images/avatar-default.png'}" alt="${content.username}">
         <div>
           <strong>${content.username}</strong><br>
-          <small>${content.time}</small>
+          <small>${content.createTime || content.time}</small>
         </div>
       </div>
       <div class="body">
-        <p>${content.text}</p>
-        ${content.mediaType === 'image' ? `<img src="${content.mediaUrl}" class="media">` : ''}
-        ${content.mediaType === 'video' ? `<video src="${content.mediaUrl}" controls class="media"></video>` : ''}
+        <p>${content.text || ''}</p>
+        ${content.type === 'IMAGE' ? content.mediaUrls?.map(url => `<img src="${url}" class="media">`).join('') || '' : ''}
+        ${content.type === 'VIDEO' ? `<video src="${content.mediaUrls?.[0] || ''}" controls class="media"></video>` : ''}
       </div>
       <div class="footer">
         <span>ID: ${content.id}</span>
@@ -115,14 +172,44 @@ function renderContents() {
 
   // 删除内容
   document.querySelectorAll('#contentsList .delete-btn').forEach(btn => {
-    btn.onclick = () => {
-      if (confirm('确定要删除这条内容吗？')) {
-        const id = btn.dataset.id;
-        // 实际项目：axios.delete(`/api/admin/content/${id}`)
-        mockContents = mockContents.filter(c => c.id != id);
-        alert('内容已删除（模拟）');
-        renderContents();
+    btn.onclick = async () => {
+      if (confirm('确定删除这条内容吗？')) {
+        try {
+          await axios.delete(`/api/admin/content/${btn.dataset.id}`);
+          alert('内容已删除');
+          loadContents();
+        } catch (err) {
+          alert('删除失败：' + (err.response?.data?.message || '未知错误'));
+        }
       }
     };
   });
+}
+
+// 简单分页渲染
+function renderPagination(containerId, current, total, loadFn) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+
+  if (total <= 1) return;
+
+  const prev = document.createElement('button');
+  prev.textContent = '上一页';
+  prev.disabled = current === 1;
+  prev.onclick = () => { /* 重新加载上一页 */ loadFn(); };
+  container.appendChild(prev);
+
+  for (let i = 1; i <= total; i++) {
+    const btn = document.createElement('button');
+    btn.textContent = i;
+    btn.classList.toggle('active', i === current);
+    btn.onclick = () => { /* 跳转指定页 */ };
+    container.appendChild(btn);
+  }
+
+  const next = document.createElement('button');
+  next.textContent = '下一页';
+  next.disabled = current === total;
+  next.onclick = loadFn;
+  container.appendChild(next);
 }

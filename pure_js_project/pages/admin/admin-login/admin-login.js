@@ -1,4 +1,4 @@
-// admin-login.js - 管理员登录逻辑
+// admin-login.js - 使用普通登录接口 + 权限判断
 
 document.addEventListener('DOMContentLoaded', function() {
   const emailInput = document.getElementById('adminEmail');
@@ -6,9 +6,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const loginBtn = document.getElementById('adminLoginBtn');
   const errorTip = document.getElementById('errorTip');
   const togglePwdBtn = document.getElementById('togglePwd');
-  const rememberMe = document.getElementById('rememberMe');
 
-  // 密码显示/隐藏切换
+  // 密码显示/隐藏
   togglePwdBtn.addEventListener('click', () => {
     const type = passwordInput.type === 'password' ? 'text' : 'password';
     passwordInput.type = type;
@@ -16,68 +15,88 @@ document.addEventListener('DOMContentLoaded', function() {
     togglePwdBtn.querySelector('i').classList.toggle('fa-eye', type === 'text');
   });
 
-  // 显示错误提示
   function showError(message) {
     errorTip.textContent = message;
   }
 
-  // 清空错误提示
   function clearError() {
     errorTip.textContent = '';
   }
 
-  // 登录处理
   async function handleAdminLogin() {
-    const email = emailInput.value.trim();
+    const username = emailInput.value.trim(); // 文档中登录用 username，可用邮箱作为用户名
     const password = passwordInput.value.trim();
 
     clearError();
 
-    if (!email) {
-      return showError('请输入管理员邮箱');
-    }
-    if (!password) {
-      return showError('请输入密码');
-    }
+    if (!username) return showError('请输入用户名/邮箱');
+    if (!password) return showError('请输入密码');
 
     loginBtn.disabled = true;
     loginBtn.textContent = '登录中...';
 
     try {
-      // 实际项目中调用管理员专用登录接口
-      const response = await axios.post('/api/admin/login', {
-        email: email,
-        password: password,
-        rememberMe: rememberMe.checked
+      // 使用普通登录接口
+      const response = await axios.post('/api/login', {
+        username: username,
+        password: password
       });
 
-      if (response.data.code === 200 || response.data.success) {
-        // 保存管理员 token（可与普通用户区分存储）
-        localStorage.setItem('adminToken', response.data.data.token);
-        localStorage.setItem('adminInfo', JSON.stringify(response.data.data.user));
+      if (response.data.code === 200) {
+        const { token, user } = response.data.data;
+
+        // 判断是否为管理员
+        if (user.role !== 'ADMIN') {
+          showError('权限不足：您不是管理员');
+          loginBtn.disabled = false;
+          loginBtn.textContent = '立即登录';
+          return;
+        }
+
+        // 保存 token 和管理员信息
+        localStorage.setItem('token', token);
+        localStorage.setItem('userInfo', JSON.stringify(user));
+        localStorage.setItem('isAdmin', 'true');
 
         alert('管理员登录成功！');
-        window.location.href = '../admin/admin.html'; // 跳转到管理后台
+        window.location.href = 'admin.html';
       } else {
         showError(response.data.message || '登录失败');
       }
     } catch (error) {
-      const msg = error.response?.data?.message || '网络错误，请稍后重试';
+      const msg = error.response?.data?.message || '网络错误，请检查账号密码';
       showError(msg);
-      console.error('管理员登录错误:', error);
+      console.error('管理员登录失败:', error);
     } finally {
       loginBtn.disabled = false;
       loginBtn.textContent = '立即登录';
     }
   }
 
-  // 绑定事件
   loginBtn.addEventListener('click', handleAdminLogin);
 
-  // 回车登录
   passwordInput.addEventListener('keyup', (e) => {
-    if (e.key === 'Enter') {
-      handleAdminLogin();
-    }
+    if (e.key === 'Enter') handleAdminLogin();
   });
+});
+
+// 鼠标跟随光点效果
+document.addEventListener('DOMContentLoaded', function() {
+  const glow = document.querySelector('.mouse-glow');
+
+  if (glow) {
+    document.addEventListener('mousemove', (e) => {
+      glow.style.left = e.clientX + 'px';
+      glow.style.top = e.clientY + 'px';
+    });
+
+    // 鼠标离开页面时隐藏光点
+    document.addEventListener('mouseleave', () => {
+      glow.style.opacity = '0';
+    });
+
+    document.addEventListener('mouseenter', () => {
+      glow.style.opacity = '0.6';
+    });
+  }
 });

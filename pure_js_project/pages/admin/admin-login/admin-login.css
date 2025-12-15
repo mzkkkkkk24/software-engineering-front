@@ -221,3 +221,86 @@ body {
     font-size: 1.9rem;
   }
 }
+
+/* admin-login.css - 新增：动态背景（深色科技版） */
+
+body {
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  min-height: 100vh;
+  color: #e2e8f0;
+  background-color: #0f172a;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 动态背景容器 */
+.dynamic-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+}
+
+/* 深色漂浮光晕 */
+.dynamic-bg .blob {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.25), transparent);
+  filter: blur(80px);
+  animation: float-blob-admin 30s infinite ease-in-out;
+}
+
+.dynamic-bg .blob:nth-child(1) {
+  width: 500px;
+  height: 500px;
+  left: -10%;
+  top: 10%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.3), transparent);
+  animation-delay: 0s;
+}
+
+.dynamic-bg .blob:nth-child(2) {
+  width: 700px;
+  height: 700px;
+  right: -20%;
+  bottom: -15%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.25), transparent);
+  animation-delay: 10s;
+}
+
+.dynamic-bg .blob:nth-child(3) {
+  width: 400px;
+  height: 400px;
+  left: 40%;
+  top: -10%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.2), transparent);
+  animation-delay: 18s;
+}
+
+@keyframes float-blob-admin {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+  33% { transform: translate(120px, -100px) scale(1.15); opacity: 1; }
+  66% { transform: translate(-80px, 120px) scale(0.9); opacity: 0.7; }
+}
+
+/* 鼠标跟随光点效果 */
+.mouse-glow {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.3), transparent 70%);
+  pointer-events: none; /* 不阻挡鼠标事件 */
+  transform: translate(-50%, -50%);
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  opacity: 0.6;
+  filter: blur(40px);
+  z-index: 0;
+  mix-blend-mode: screen; /* 柔和叠加模式，更梦幻 */
+}
+
+/* 鼠标静止时淡出（更优雅） */
+body:not(:hover) .mouse-glow {
+  opacity: 0.2;
+  transition: opacity 1s ease;
+}

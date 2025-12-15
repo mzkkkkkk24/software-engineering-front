@@ -1,84 +1,77 @@
-// user-detail.js（修正版 - 编辑资料按钮可点击）
 
 let tempAvatarFile = null;
+let currentUserId = null; // 当前查看的用户ID
+let isCurrentUser = false; // 是否是自己的主页
 
 document.addEventListener('DOMContentLoaded', async function() {
   const urlParams = new URLSearchParams(window.location.search);
-  const userId = urlParams.get('userId') || 'current';
+  const userIdParam = urlParams.get('userId') || 'current';
+
+  // 检查登录
+  const token = localStorage.getItem('token');
+  if (!token) {
+    window.location.href = '../../login/login.html';
+    return;
+  }
 
   try {
-    const userInfo = await fetchUserInfo(userId);
-    const userPosts = await fetchUserPosts(userId);
+    // 获取要查看的用户信息
+    const targetUser = await fetchTargetUser(userIdParam);
+    const userPosts = await fetchUserPosts(targetUser.id);
 
-    renderProfile(userInfo, userPosts, userId === 'current');
+    currentUserId = targetUser.id;
+    isCurrentUser = userIdParam === 'current';
+
+    renderProfile(targetUser, userPosts, isCurrentUser);
   } catch (error) {
-    console.error('加载失败', error);
+    console.error('加载用户资料失败', error);
     document.getElementById('profileContentList').innerHTML = '<div class="no-content-profile">加载失败，请刷新重试</div>';
   }
 });
 
-// 模拟数据（实际项目中替换为真实接口）
-async function fetchUserInfo(userId) {
-  if (userId === 'current') {
-    return {
-      username: '我',
-      avatar: '../../common/images/avatar-default.png',
-      bio: '热爱生活，记录美好瞬间～',
-      followers: 128,
-      following: 86
-    };
+// 获取目标用户信息（current 表示自己）
+async function fetchTargetUser(userIdParam) {
+  if (userIdParam === 'current') {
+    const res = await axios.get('/api/user/info');
+    if (res.data.code === 200) return res.data.data;
   } else {
-    return {
-      username: '张小明',
-      avatar: '../../common/images/avatar-1.png',
-      bio: '摄影爱好者 | 旅行达人 | 分享沿途风景',
-      followers: 342,
-      following: 156
-    };
+    const res = await axios.get(`/api/user/${userIdParam}`);
+    if (res.data.code === 200) return res.data.data;
   }
+  throw new Error('获取用户信息失败');
 }
 
-async function fetchUserPosts(userId) {
-  return [
-    {
-      type: 'image',
-      text: '周末去了湖边露营，风景真的太美了！推荐给大家～',
-      mediaUrl: '../../common/images/post-1.jpg',
-      score: 4.8,
-      comments: 8,
-      time: '今天 09:24'
-    },
-    {
-      type: 'video',
-      text: '今天尝试做了红烧肉，第一次成功！',
-      mediaUrl: 'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4',
-      score: 4.9,
-      comments: 24,
-      time: '昨天 18:36'
-    }
-  ];
+// 获取用户内容列表（分页）
+async function fetchUserPosts(userId, page = 1, size = 20) {
+  const res = await axios.get(`/api/content/user/${userId}`, {
+    params: { page, size }
+  });
+  if (res.data.code === 200) {
+    return res.data.data.records || [];
+  }
+  return [];
 }
 
 function renderProfile(user, posts, isCurrentUser) {
-  // 更新基本信息
-  document.getElementById('profileAvatar').src = user.avatar;
-  document.getElementById('profileUsername').textContent = user.username;
+  document.getElementById('profileAvatar').src = user.avatar || '../../common/images/avatar-default.png';
+  document.getElementById('profileUsername').textContent = user.nickname || user.username;
   document.getElementById('profileBio').textContent = user.bio || '这家伙很懒，什么都没写～';
   document.getElementById('postCount').textContent = posts.length;
-  document.getElementById('followerCount').textContent = user.followers;
-  document.getElementById('followingCount').textContent = user.following;
+  // 粉丝/关注数（接口未明确，暂用模拟或后端返回）
+  document.getElementById('followerCount').textContent = user.followers || 0;
+  document.getElementById('followingCount').textContent = user.following || 0;
 
-  // 渲染操作按钮
+  // 操作按钮
   const actions = document.getElementById('profileActions');
   if (isCurrentUser) {
     actions.innerHTML = '<button class="edit-profile-btn">编辑资料</button>';
-    // 在按钮渲染完成后立即绑定事件
-    initEditProfile();
+    initEditProfile(user); // 传入当前用户数据
   } else {
     actions.innerHTML = '<button class="follow-btn">+ 关注</button>';
+    // TODO: 关注功能可后续添加 /api/follow
   }
 
-  // 渲染内容列表
+  // 渲染内容
   const list = document.getElementById('profileContentList');
   list.innerHTML = '';
 
@@ -87,40 +80,50 @@ function renderProfile(user, posts, isCurrentUser) {
     return;
   }
 
+  document.querySelector('.no-content-profile').style.display = 'none';
+
   posts.forEach(post => {
-    const item = createContentElement({
-      ...post,
-      username: user.username,
-      avatar: user.avatar,
-      isOwn: isCurrentUser
-    });
+    const item = createContentElement(post);
     list.appendChild(item);
   });
 }
 
-function createContentElement(content) {
+function createContentElement(post) {
   const item = document.createElement('div');
   item.className = 'content-item';
+
+  let mediaHtml = '';
+  if (post.type === 'IMAGE' && post.mediaUrls?.length) {
+    mediaHtml = post.mediaUrls.map(url => 
+      `<div class="media-container"><img src="${url}" alt="图片"></div>`
+    ).join('');
+  } else if (post.type === 'VIDEO' && post.mediaUrls?.length) {
+    mediaHtml = `<div class="media-container video-container">
+      <video controls><source src="${post.mediaUrls[0]}" type="video/mp4"></video>
+    </div>`;
+  }
+
   item.innerHTML = `
     <div class="content-header">
-      <img src="${content.avatar}" alt="头像">
+      <img src="${post.avatar || '../../common/images/avatar-default.png'}" alt="头像">
       <div class="user-meta">
-        <h3 class="username">${content.username}</h3>
-        <p class="post-time">${content.time || '刚刚'}</p>
+        <h3 class="username">${post.nickname || post.username}</h3>
+        <p class="post-time">${formatTime(post.createTime)}</p>
       </div>
     </div>
     <div class="content-body">
-      <p class="content-text">${content.text}</p>
-      ${content.type === 'image' ? `<div class="media-container"><img src="${content.mediaUrl}" alt="图片"></div>` : ''}
-      ${content.type === 'video' ? `<div class="media-container video-container"><video controls><source src="${content.mediaUrl}" type="video/mp4"></video></div>` : ''}
+      <p class="content-text">${post.text || ''}</p>
+      ${mediaHtml}
     </div>
     <div class="content-footer">
       <div class="rating">
-        <span class="score">${content.score || '0.0'}</span>
-        <div class="stars">${generateStars(content.score || 0)}</div>
+        <span class="score">${post.score || '0.0'}</span>
+        <div class="stars">${generateStars(post.score || 0)}</div>
       </div>
       <div class="interaction">
-        <button class="interact-btn comment-btn"><i class="fas fa-comment"></i> 评论 (${content.comments || 0})</button>
+        <button class="interact-btn comment-btn">
+          <i class="fas fa-comment"></i> 评论 (${post.commentCount || 0})
+        </button>
       </div>
     </div>
   `;
@@ -129,20 +132,31 @@ function createContentElement(content) {
 
 function generateStars(score) {
   let html = '';
-  for (let i = 1; i <= 5; i++) {
-    if (i <= Math.floor(score)) html += '<i class="fas fa-star"></i>';
-    else if (i - 0.5 <= score) html += '<i class="fas fa-star-half-alt"></i>';
+  const full = Math.floor(score);
+  const half = score - full >= 0.5;
+  for (let i = 0; i < 5; i++) {
+    if (i < full) html += '<i class="fas fa-star"></i>';
+    else if (i === full && half) html += '<i class="fas fa-star-half-alt"></i>';
     else html += '<i class="far fa-star"></i>';
   }
   return html;
 }
 
-// 编辑资料功能（关键：独立函数，确保按钮存在后再绑定）
-function initEditProfile() {
-  const editBtn = document.querySelector('.edit-profile-btn');
-  const modal = document.getElementById('editModal');
+function formatTime(timeStr) {
+  const date = new Date(timeStr);
+  const now = new Date();
+  const diff = now - date;
+  if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+  return date.toLocaleString();
+}
 
-  if (!editBtn) return; // 保险
+// 编辑资料功能（完整对接）
+function initEditProfile(currentUserData) {
+  const modal = document.getElementById('editModal');
+  const editBtn = document.querySelector('.edit-profile-btn');
+
+  if (!editBtn) return;
 
   editBtn.onclick = () => {
     modal.classList.add('show');
@@ -152,20 +166,19 @@ function initEditProfile() {
     document.getElementById('editUsername').value = document.getElementById('profileUsername').textContent.trim();
     document.getElementById('editBio').value = document.getElementById('profileBio').textContent.trim();
 
-    // 重置头像预览
     document.getElementById('newAvatarPreview').style.display = 'none';
     document.getElementById('currentAvatarPreview').style.display = 'block';
     tempAvatarFile = null;
     document.getElementById('newAvatarInput').value = '';
   };
 
-  // 关闭模态框（多个方式）
+  // 关闭模态框
   const closeModal = () => modal.classList.remove('show');
   document.getElementById('closeEditModal').onclick = closeModal;
   document.getElementById('cancelEdit').onclick = closeModal;
   document.querySelector('.modal-overlay').onclick = closeModal;
 
-  // 更换头像预览
+  // 头像预览
   document.getElementById('newAvatarInput').addEventListener('change', e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -180,7 +193,7 @@ function initEditProfile() {
     reader.readAsDataURL(file);
   });
 
-  // 删除新头像
+  // 移除预览
   document.getElementById('removeAvatar').onclick = () => {
     document.getElementById('newAvatarPreview').style.display = 'none';
     document.getElementById('currentAvatarPreview').style.display = 'block';
@@ -188,27 +201,61 @@ function initEditProfile() {
     document.getElementById('newAvatarInput').value = '';
   };
 
-  // 保存更改
-  document.getElementById('saveProfile').onclick = () => {
+  // 保存资料（真实接口）
+  document.getElementById('saveProfile').onclick = async () => {
     const newUsername = document.getElementById('editUsername').value.trim();
     const newBio = document.getElementById('editBio').value.trim();
 
     if (!newUsername) {
-      alert('用户名不能为空！');
+      alert('用户名不能为空');
       return;
     }
 
-    // 更新头像（使用预览图或原图）
-    const newAvatarUrl = tempAvatarFile 
-      ? document.getElementById('previewImg').src 
-      : document.getElementById('profileAvatar').src;
+    try {
+      let newAvatarUrl = document.getElementById('profileAvatar').src;
 
-    // 更新页面显示
-    document.getElementById('profileUsername').textContent = newUsername;
-    document.getElementById('profileBio').textContent = newBio || '这家伙很懒，什么都没写～';
-    document.getElementById('profileAvatar').src = newAvatarUrl;
+      // 如果更换了头像，先上传
+      if (tempAvatarFile) {
+        const formData = new FormData();
+        formData.append('avatar', tempAvatarFile);
 
-    modal.classList.remove('show');
-    alert('资料修改成功！（前端已更新，实际项目需调用后端接口保存）');
+        const uploadRes = await axios.post('/api/user/avatar', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        if (uploadRes.data.code === 200) {
+          newAvatarUrl = uploadRes.data.data.avatarUrl;
+        } else {
+          alert('头像上传失败');
+          return;
+        }
+      }
+
+      // 更新资料
+      const updateRes = await axios.put('/api/user/profile', {
+        nickname: newUsername,
+        bio: newBio,
+        avatar: newAvatarUrl
+      });
+
+      if (updateRes.data.code === 200) {
+        // 更新页面
+        document.getElementById('profileUsername').textContent = newUsername;
+        document.getElementById('profileBio').textContent = newBio || '这家伙很懒，什么都没写～';
+        document.getElementById('profileAvatar').src = newAvatarUrl;
+
+        // 更新本地用户信息
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        userInfo.nickname = newUsername;
+        userInfo.bio = newBio;
+        userInfo.avatar = newAvatarUrl;
+        localStorage.setItem('userInfo', JSON.stringify(userInfo));
+
+        modal.classList.remove('show');
+        alert('资料更新成功！');
+      }
+    } catch (err) {
+      alert('更新失败：' + (err.response?.data?.message || '未知错误'));
+    }
   };
 }

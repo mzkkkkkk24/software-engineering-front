@@ -3,110 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign Up</title>
-  <!-- 引入Font Awesome图标库 -->
+  <title>注册 - MediaShare</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- 公共样式 -->
   <link rel="stylesheet" href="../../common/css/global.css">
   <link rel="stylesheet" href="../../common/css/common.css">
-  <!-- 注册页样式（与登录页同源） -->
   <link rel="stylesheet" href="register.css">
 </head>
 <body>
-  <!-- 主容器：左右分栏卡片（与登录页一致） -->
+  <!-- 动态背景 -->
+  <div class="dynamic-bg">
+    <div class="blob"></div>
+    <div class="blob"></div>
+    <div class="blob"></div>
+
+    <!--鼠标跟随光点 -->
+  <div class="mouse-glow"></div>
+  </div>
   <div class="auth-container">
-    <!-- 左侧插画区 -->
     <div class="auth-illustration">
       <div class="illustration-img"></div>
     </div>
 
-    <!-- 右侧表单区 -->
     <div class="auth-form-container">
       <div class="form-wrapper">
-        <!-- 品牌标识 -->
         <div class="brand-logo">
           <i class="fas fa-compass"></i>
         </div>
         
-        <!-- 标题区域 -->
-        <h1 class="welcome-title">Create an account</h1>
-        <p class="welcome-subtitle">Please enter your details to sign up</p>
+        <h1 class="welcome-title">创建账号</h1>
+        <p class="welcome-subtitle">填写以下信息完成注册</p>
         
-        <!-- 全局错误提示 -->
         <div class="error-tip" id="globalError"></div>
         
-        <!-- 注册表单 -->
         <form class="auth-form">
-          <!-- 姓名字段 -->
+          <!-- 用户名（必填） -->
           <div class="form-item">
-            <label for="fullname">Full Name</label>
-            <input type="text" id="fullname" placeholder="Enter your full name" autocomplete="name">
+            <label for="username">用户名 *</label>
+            <input type="text" id="username" placeholder="3-20个字符" maxlength="20" required>
           </div>
           
-          <!-- 邮箱字段 -->
+          <!-- 昵称（可选） -->
           <div class="form-item">
-            <label for="email">Email</label>
-            <input type="email" id="email" placeholder="your@email.com" autocomplete="email">
+            <label for="nickname">昵称</label>
+            <input type="text" id="nickname" placeholder="可选，显示名称" maxlength="30">
           </div>
           
-          <!-- 密码字段 -->
+          <!-- 邮箱（可选） -->
+          <div class="form-item">
+            <label for="email">邮箱</label>
+            <input type="email" id="email" placeholder="your@email.com">
+          </div>
+          
+          <!-- 手机号（可选） -->
+          <div class="form-item">
+            <label for="phone">手机号</label>
+            <input type="tel" id="phone" placeholder="13800138000">
+          </div>
+          
+          <!-- 密码 -->
           <div class="form-item password-item">
-            <label for="password">Password</label>
+            <label for="password">密码 *</label>
             <div class="password-input-group">
-              <input type="password" id="password" placeholder="Create a password" autocomplete="new-password">
+              <input type="password" id="password" placeholder="6-20个字符" maxlength="20" required>
               <button type="button" class="toggle-pwd" id="togglePwd">
                 <i class="fas fa-eye-slash"></i>
               </button>
             </div>
           </div>
           
-          <!-- 确认密码字段（带不一致提示） -->
+          <!-- 确认密码 -->
           <div class="form-item password-item">
-            <label for="confirmPwd">Confirm Password</label>
+            <label for="confirmPwd">确认密码 *</label>
             <div class="password-input-group">
-              <input type="password" id="confirmPwd" placeholder="Confirm your password" autocomplete="new-password">
-              <!-- 密码不一致提示（默认隐藏） -->
+              <input type="password" id="confirmPwd" placeholder="再次输入密码" maxlength="20" required>
               <span class="pwd-match-tip" id="matchTip">
-                <i class="fas fa-exclamation-circle"></i> Passwords don't match
+                <i class="fas fa-exclamation-circle"></i> 两次密码不一致
               </span>
-              <!-- 显示/隐藏按钮 -->
               <button type="button" class="toggle-pwd" id="toggleConfirmPwd">
                 <i class="fas fa-eye-slash"></i>
               </button>
             </div>
           </div>
           
-          <!-- 同意条款 -->
           <div class="form-actions">
             <label class="agree-terms">
-              <input type="checkbox" id="agreeTerms">
-              <span>Agree to Terms & Privacy Policy</span>
+              <input type="checkbox" id="agreeTerms" required>
+              <span>我同意 <a href="#" target="_blank">服务条款</a> 和 <a href="#" target="_blank">隐私政策</a></span>
             </label>
           </div>
           
-          <!-- 注册按钮 -->
-          <button type="button" class="auth-btn" id="signupBtn">Sign up</button>
+          <button type="button" class="auth-btn" id="signupBtn">立即注册</button>
           
-          <!-- 谷歌注册按钮 -->
-          <button type="button" class="google-auth-btn">
-            <i class="fab fa-google"></i>
-            <span>Sign up with Google</span>
-          </button>
-          
-          <!-- 登录链接 -->
           <div class="auth-link">
-            Already have an account? <a href="../login/login.html">Log in</a>
+            已有账号？ <a href="../login/login.html">立即登录</a>
           </div>
         </form>
       </div>
     </div>
   </div>
 
-  <!-- 引入JS -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="../../common/js/axios-config.js"></script>
   <script src="../../common/js/utils.js"></script>
-  <script src="../../common/js/global.js"></script>
   <script src="register.js"></script>
 </body>
 </html>

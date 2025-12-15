@@ -3,92 +3,76 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login</title>
-  <!-- 引入Font Awesome图标库（用于密码切换/谷歌图标） -->
+  <title>登录 - MediaShare</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- 公共样式 -->
   <link rel="stylesheet" href="../../common/css/global.css">
   <link rel="stylesheet" href="../../common/css/common.css">
-  <!-- 登录页专属样式 -->
   <link rel="stylesheet" href="login.css">
 </head>
 <body>
-    
-  <!-- 登录页主容器（左右分栏） -->
+  <!--动态背景-->
+  <div class="dynamic-bg">
+    <div class="blob"></div>
+    <div class="blob"></div>
+    <div class="blob"></div>
+
+    <!--鼠标跟随光点 -->
+  <div class="mouse-glow"></div>
+  </div>
   <div class="login-container">
-    <!-- 左侧插画区域 -->
     <div class="login-illustration">
-      <div class="illustration-content">
-        <!-- 插画图形（通过CSS背景图实现） -->
-      </div>
+      <div class="illustration-content"></div>
     </div>
 
-    <!-- 右侧表单区域 -->
     <div class="login-form-container">
       <div class="form-wrapper">
-        <!-- 品牌标识 -->
         <div class="brand-logo">
-          <i class="fas fa-compass"></i> <!-- 可替换为项目Logo -->
+          <i class="fas fa-compass"></i>
         </div>
         
-        <!-- 欢迎文字 -->
-        <h1 class="welcome-title">Welcome back!</h1>
-        <p class="welcome-subtitle">Please enter your details to log in</p>
+        <h1 class="welcome-title">欢迎回来！</h1>
+        <p class="welcome-subtitle">请输入您的账号信息进行登录</p>
         
-        <!-- 错误提示区域 -->
         <div class="error-tip" id="errorTip"></div>
         
-        <!-- 登录表单 -->
         <form class="login-form">
-          <!-- 邮箱输入框 -->
+          <!-- 用户名（文档中为 username） -->
           <div class="form-item">
-            <label for="email">Email</label>
-            <input type="email" id="email" placeholder="your@email.com" autocomplete="email">
+            <label for="username">用户名</label>
+            <input type="text" id="username" placeholder="请输入用户名" autocomplete="username" required>
           </div>
           
-          <!-- 密码输入框（带显示/隐藏按钮） -->
+          <!-- 密码 -->
           <div class="form-item password-item">
-            <label for="password">Password</label>
+            <label for="password">密码</label>
             <div class="password-input-wrapper">
-              <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password">
+              <input type="password" id="password" placeholder="请输入密码" autocomplete="current-password" required>
               <button type="button" class="toggle-password" id="togglePwd">
                 <i class="fas fa-eye-slash"></i>
               </button>
             </div>
           </div>
           
-          <!-- 记住我 + 忘记密码 -->
           <div class="form-actions">
             <label class="remember-me">
               <input type="checkbox" id="rememberMe">
-              <span>Remember for 30 days</span>
+              <span>30天内记住登录</span>
             </label>
-            <a href="#" class="forgot-password">Forgot password?</a>
+            <a href="#" class="forgot-password">忘记密码？</a>
           </div>
           
-          <!-- 登录按钮 -->
-          <button type="button" class="login-btn" id="loginBtn">Log in</button>
+          <button type="button" class="login-btn" id="loginBtn">立即登录</button>
           
-          <!-- 谷歌登录按钮 -->
-          <button type="button" class="google-login-btn">
-            <i class="fab fa-google"></i>
-            <span>Log in with Google</span>
-          </button>
-          
-          <!-- 注册链接 -->
           <div class="register-link">
-            Don't have an account? <a href="../register/register.html">Sign up</a>
+            还没有账号？ <a href="../register/register.html">立即注册</a>
           </div>
         </form>
       </div>
     </div>
   </div>
 
-  <!-- 引入JS（顺序不可调整） -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="../../common/js/axios-config.js"></script>
   <script src="../../common/js/utils.js"></script>
-  <script src="../../common/js/global.js"></script>
   <script src="login.js"></script>
 </body>
 </html>
