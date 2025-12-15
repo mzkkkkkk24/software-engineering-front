@@ -1,104 +1,119 @@
-// 1. 密码显示/隐藏切换
-function initPasswordToggle() {
-  const passwordInput = document.getElementById('password');
-  const toggleBtn = document.getElementById('togglePwd');
-  const icon = toggleBtn.querySelector('i');
 
-  toggleBtn.addEventListener('click', () => {
-    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-    passwordInput.setAttribute('type', type);
-    
-    // 切换图标
-    if (type === 'password') {
-      icon.classList.remove('fa-eye');
-      icon.classList.add('fa-eye-slash');
-    } else {
-      icon.classList.remove('fa-eye-slash');
-      icon.classList.add('fa-eye');
-    }
-  });
+// 加载公共导航栏
+function loadHeader() {
+  fetch('../../common/components/header.html')
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById('header-container').innerHTML = html;
+    })
+    .catch(err => console.error('加载导航栏失败：', err));
 }
 
-// 2. 记住密码功能（本地存储）
-function initRememberMe() {
-  // 页面加载时读取本地存储，填充表单
-  const savedEmail = localStorage.getItem('savedEmail');
-  const savedPassword = localStorage.getItem('savedPassword');
-  if (savedEmail && savedPassword) {
-    document.getElementById('email').value = savedEmail;
-    document.getElementById('password').value = savedPassword;
-    document.getElementById('rememberMe').checked = true;
-  }
-}
-
-// 3. 登录逻辑
+//登录核心逻辑
 function initLogin() {
-  const emailInput = document.getElementById('email');
+  const usernameInput = document.getElementById('username');
   const passwordInput = document.getElementById('password');
-  const rememberMe = document.getElementById('rememberMe');
   const loginBtn = document.getElementById('loginBtn');
   const errorTip = document.getElementById('errorTip');
 
-  loginBtn.addEventListener('click', async () => {
-    const email = emailInput.value.trim();
+  const togglePwdBtn = document.getElementById('togglePwd');
+  const pwdIcon = togglePwdBtn.querySelector('i');
+  
+  togglePwdBtn.addEventListener('click', () => {
+    // 切换输入框类型（password ↔ text）
+    const isHidden = passwordInput.type === 'password';
+    passwordInput.type = isHidden ? 'text' : 'password';
+    // 切换图标（fa-eye-slash ↔ fa-eye）
+    pwdIcon.classList.toggle('fa-eye-slash', !isHidden);
+    pwdIcon.classList.toggle('fa-eye', isHidden);
+  });
+
+  // 防抖处理：防止快速重复点击
+  const handleLogin = debounce(async () => {
+    const username = usernameInput.value.trim();
     const password = passwordInput.value.trim();
 
-    // 前端校验
-    if (!email) {
-      return showError('Please enter your email');
+    //前端参数校验
+    if (!username) {
+      return showError('Please enter your username');
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return showError('Please enter a valid email');
+    if (!isUsernameValid(username)) {
+      return showError('Invalid Username');
     }
     if (!password) {
       return showError('Please enter your password');
     }
-    if (password.length < 6) {
-      return showError('Password must be at least 6 characters');
+    if (password.length < 6 || password.length > 20) {
+      return showError('Invalid Password Length');
     }
 
-    // 发起登录请求
+    //发起登录请求
     try {
       loginBtn.disabled = true;
       showError('');
 
+      // 调用登录接口
       const response = await axios.post('/login', {
-        email: email, // 注意：接口若用username，需改为username: email
-        password: password
+        email: username, // 后端接收邮箱参数名为email，需对应
+        password: password,
+        rememberMe: remember // 传递"记住我"状态，用于后端设置token过期时间
       });
 
-      // 登录成功处理
-      const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('userInfo', JSON.stringify(user));
+     //登录成功处理（根据后端返回结构调整）
+      // 后端返回格式：{ code: 200, data: { token, user }, message: "success" }
+      if (response.data.code === 200) {
+        const { token, user } = response.data.data;
+        localStorage.setItem('token', token);
+        localStorage.setItem('userInfo', JSON.stringify(user));
 
-      // 记住密码（若勾选）
-      if (rememberMe.checked) {
-        localStorage.setItem('savedEmail', email);
-        localStorage.setItem('savedPassword', password);
+        // 跳转逻辑
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get('redirect') || '../../home.html';
+        goToPage(decodeURIComponent(redirectUrl));
       } else {
-        localStorage.removeItem('savedEmail');
-        localStorage.removeItem('savedPassword');
+        showError(response.data.message || '登录失败');
       }
-
-      // 跳转首页
-      goToPage('../../index.html');
     } catch (error) {
-      showError(error.message || 'Login failed, please try again');
+      // 6. 处理失败（网络错误或后端异常）
+      showError(error.response?.data?.message || '登录失败，请检查网络或账号密码');
     } finally {
       loginBtn.disabled = false;
     }
   });
 
-  // 错误提示函数
+  // 绑定点击事件
+  loginBtn.addEventListener('click', handleLogin);
+
+  // 绑定回车事件（输入密码后按回车登录）
+  passwordInput.addEventListener('keyup', (e) => {
+    if (e.key === 'Enter') handleLogin();
+  });
+
+  // 错误提示显示函数
   function showError(msg) {
     errorTip.textContent = msg;
   }
 }
 
-// 页面加载完成后初始化
+// 新增邮箱格式校验函数
+function isEmailValid(email) {
+  const reg = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return reg.test(email);
+}
+
+// 页面加载完成后执行
 window.onload = () => {
-  initPasswordToggle();
-  initRememberMe();
+  loadHeader();
   initLogin();
+  // 自动填充注册页跳转过来的用户名
+  fillUsernameFromUrl();
 };
+
+// 从URL参数中获取用户名并填充
+function fillUsernameFromUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const username = urlParams.get('username');
+  if (username) {
+    document.getElementById('username').value = decodeURIComponent(username);
+  }
+}

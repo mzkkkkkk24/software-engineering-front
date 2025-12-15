@@ -1,0 +1,223 @@
+/* admin-login.css - 管理员登录页专用样式（基于 login.css 改造） */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  min-height: 100vh;
+  color: #e2e8f0;
+  background-color: #0f172a; /* 深蓝黑背景，管理后台风格 */
+}
+
+/* 主容器 */
+.admin-login-container {
+  display: flex;
+  width: 100%;
+  max-width: 1200px;
+  min-height: 600px;
+  margin: 40px auto;
+  background-color: #1e293b;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+/* 左侧插画（深色调） */
+.login-illustration {
+  flex: 0 0 40%;
+  background: linear-gradient(135deg, #1e293b, #334155);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.illustration-content {
+  width: 100%;
+  height: 100%;
+  max-width: 420px;
+  max-height: 420px;
+  background-image: url('./images/admin-illustration.png'); /* 可替换为管理专用插画 */
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.9;
+}
+
+/* 右侧表单区 */
+.login-form-container {
+  flex: 0 0 60%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  background-color: #1e293b;
+}
+
+/* 表单包装 */
+.form-wrapper {
+  width: 100%;
+  max-width: 400px;
+}
+
+/* 品牌Logo（盾牌图标，代表管理权限） */
+.brand-logo {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 2.5rem;
+  background-color: #3b82f6;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.8rem;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+}
+
+/* 标题文字 */
+.welcome-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.welcome-subtitle {
+  color: #94a3b8;
+  font-size: 1.1rem;
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+/* 输入框 */
+.form-item input {
+  width: 100%;
+  height: 52px;
+  padding: 0 1.2rem;
+  border: 1px solid #475569;
+  border-radius: 12px;
+  font-size: 1rem;
+  background-color: #334155;
+  color: #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.form-item input::placeholder {
+  color: #64748b;
+}
+
+.form-item input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+  outline: none;
+  background-color: #1e293b;
+}
+
+/* 密码切换按钮 */
+.toggle-password {
+  color: #94a3b8;
+}
+
+.toggle-password:hover {
+  color: #e2e8f0;
+}
+
+/* 表单操作区 */
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+}
+
+.remember-me {
+  color: #cbd5e1;
+}
+
+.remember-me input {
+  accent-color: #3b82f6;
+}
+
+.back-to-user {
+  color: #60a5fa;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.back-to-user:hover {
+  color: #93bbfc;
+  text-decoration: underline;
+}
+
+/* 登录按钮 */
+.login-btn {
+  width: 100%;
+  height: 54px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 1.5rem;
+}
+
+.login-btn:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+}
+
+.login-btn:disabled {
+  background-color: #64748b;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 提示文字 */
+.admin-tip {
+  text-align: center;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+/* 错误提示 */
+.error-tip {
+  height: 28px;
+  margin-bottom: 1rem;
+  color: #fca5a5;
+  font-size: 0.95rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .admin-login-container {
+    flex-direction: column;
+    margin: 20px auto;
+    border-radius: 16px;
+  }
+
+  .login-illustration {
+    height: 260px;
+    flex: none;
+  }
+
+  .login-form-container {
+    padding: 2.5rem 2rem;
+  }
+
+  .welcome-title {
+    font-size: 1.9rem;
+  }
+}

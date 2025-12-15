@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个人主页 - MediaShare</title>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- 公共样式（假设你有这些文件） -->
+  <link rel="stylesheet" href="../../common/css/global.css">
+  <link rel="stylesheet" href="../../common/css/common.css">
+  
+  <!-- 用户主页专属样式 -->
+  <link rel="stylesheet" href="user-detail.css">
+</head>
+<body>
+  <!-- 顶部导航栏 -->
+  <header class="navbar">
+    <div class="container">
+      <div class="brand" onclick="window.location.href='../home/home.html'">
+        <i class="fas fa-compass"></i>
+        <span>MediaShare</span>
+      </div>
+      
+      <div class="navbar-actions">
+        <button class="back-btn-mobile" onclick="history.back()">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容 -->
+  <main class="profile-page">
+    <div class="container">
+      <!-- 用户信息头部 -->
+      <div class="profile-header">
+        <div class="profile-cover">
+          <div class="cover-placeholder"></div>
+        </div>
+        
+        <div class="profile-info">
+          <div class="profile-avatar-big">
+            <img src="../../common/images/avatar-default.png" alt="用户头像" id="profileAvatar">
+          </div>
+          
+          <div class="profile-details">
+            <h1 id="profileUsername">加载中...</h1>
+            <p id="profileBio" class="bio">这是一段个性签名～</p>
+            
+            <div class="profile-stats">
+              <div class="stat">
+                <strong id="postCount">0</strong>
+                <span>内容</span>
+              </div>
+              <div class="stat">
+                <strong id="followerCount">0</strong>
+                <span>粉丝</span>
+              </div>
+              <div class="stat">
+                <strong id="followingCount">0</strong>
+                <span>关注</span>
+              </div>
+            </div>
+            
+            <div class="profile-actions" id="profileActions">
+              <!-- 动态插入按钮 -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 用户内容列表 -->
+      <div class="profile-content-list" id="profileContentList">
+        <div class="loading">加载中...</div>
+      </div>
+
+      <div class="no-content-profile">
+        还没有发布任何内容～
+      </div>
+    </div>
+  </main>
+
+  <!-- 编辑资料模态框 -->
+  <div class="edit-modal" id="editModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>编辑资料</h2>
+        <button class="close-btn" id="closeEditModal"><i class="fas fa-times"></i></button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="avatar-upload-section">
+          <div class="current-avatar">
+            <img src="../../common/images/avatar-default.png" alt="当前头像" id="currentAvatarPreview">
+          </div>
+          <label class="upload-btn">
+            <i class="fas fa-camera"></i> 更换头像
+            <input type="file" id="newAvatarInput" accept="image/*" style="display:none;">
+          </label>
+          <div class="avatar-preview" id="newAvatarPreview" style="display:none;">
+            <img id="previewImg" alt="新头像预览">
+            <button type="button" class="remove-avatar" id="removeAvatar">×</button>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>用户名</label>
+          <input type="text" id="editUsername" required maxlength="30">
+        </div>
+        
+        <div class="form-group">
+          <label>个性签名</label>
+          <textarea id="editBio" rows="4" maxlength="200" placeholder="介绍一下自己..."></textarea>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="cancel-btn" id="cancelEdit">取消</button>
+        <button type="button" class="submit-btn" id="saveProfile">保存更改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 脚本 -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="../../common/js/utils.js"></script>
+  <script src="user-detail.js"></script>
+</body>
+</html>

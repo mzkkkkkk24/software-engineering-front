@@ -1,91 +1,153 @@
 /**
- * 密码显示/隐藏切换（与登录页逻辑一致）
+ * 密码显示/隐藏切换
  */
 function initPasswordToggle() {
   // 密码框切换
-  const passwordInput = document.getElementById('password');
-  const toggleBtn = document.getElementById('togglePwd');
-  const icon = toggleBtn.querySelector('i');
-  
-  toggleBtn.addEventListener('click', () => togglePwdType(passwordInput, icon));
-
+  const pwdInput = document.getElementById('password');
+  const pwdToggle = document.getElementById('togglePwd');
   // 确认密码框切换
-  const confirmPwdInput = document.getElementById('confirmPwd');
-  const toggleConfirmBtn = document.getElementById('toggleConfirmPwd');
-  const confirmIcon = toggleConfirmBtn.querySelector('i');
-  
-  toggleConfirmBtn.addEventListener('click', () => togglePwdType(confirmPwdInput, confirmIcon));
-}
+  const confirmInput = document.getElementById('confirmPwd');
+  const confirmToggle = document.getElementById('toggleConfirmPwd');
 
-// 密码显示/隐藏通用函数
-function togglePwdType(input, icon) {
-  const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
-  input.setAttribute('type', type);
-  
-  if (type === 'text') {
-    icon.classList.remove('fa-eye-slash');
-    icon.classList.add('fa-eye');
-  } else {
-    icon.classList.remove('fa-eye');
-    icon.classList.add('fa-eye-slash');
-  }
+  // 通用切换函数
+  const togglePwdType = (input, btn) => {
+    const currentType = input.getAttribute('type');
+    const newType = currentType === 'password' ? 'text' : 'password';
+    input.setAttribute('type', newType);
+    
+    // 切换图标
+    const icon = btn.querySelector('i');
+    if (newType === 'text') {
+      icon.classList.remove('fa-eye-slash');
+      icon.classList.add('fa-eye');
+    } else {
+      icon.classList.remove('fa-eye');
+      icon.classList.add('fa-eye-slash');
+    }
+  };
+
+  pwdToggle.addEventListener('click', () => togglePwdType(pwdInput, pwdToggle));
+  confirmToggle.addEventListener('click', () => togglePwdType(confirmInput, confirmToggle));
 }
 
 /**
- * 注册表单验证（与登录页提示样式一致）
+ * 密码一致性实时校验
  */
-function initRegister() {
-  const usernameInput = document.getElementById('username');
+function initPasswordValidation() {
+  const passwordInput = document.getElementById('password');
+  const confirmInput = document.getElementById('confirmPwd');
+  const matchTip = document.getElementById('matchTip');
+  const signupBtn = document.getElementById('signupBtn');
+
+  // 实时校验函数
+  const checkMatch = () => {
+    const pwd = passwordInput.value.trim();
+    const confirmPwd = confirmInput.value.trim();
+
+    // 有值且不一致时显示提示
+    if (pwd && confirmPwd && pwd !== confirmPwd) {
+      matchTip.classList.add('show');
+      confirmInput.style.borderColor = '#ef4444'; // 红色边框强调
+      signupBtn.disabled = true; // 禁用注册按钮
+    } else {
+      matchTip.classList.remove('show');
+      confirmInput.style.borderColor = ''; // 恢复默认边框
+      signupBtn.disabled = false; // 启用注册按钮
+    }
+  };
+
+  // 绑定输入事件（实时触发校验）
+  passwordInput.addEventListener('input', checkMatch);
+  confirmInput.addEventListener('input', checkMatch);
+}
+
+/**
+ * 注册表单提交逻辑
+ */
+function initSignupSubmit() {
+  const fullnameInput = document.getElementById('fullname');
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
-  const confirmPwdInput = document.getElementById('confirmPwd');
-  const registerBtn = document.getElementById('registerBtn');
-  const errorTip = document.getElementById('errorTip');
+  const confirmInput = document.getElementById('confirmPwd');
+  const agreeTerms = document.getElementById('agreeTerms');
+  const signupBtn = document.getElementById('signupBtn');
+  const globalError = document.getElementById('globalError');
 
-  registerBtn.addEventListener('click', async () => {
-    const username = usernameInput.value.trim();
+  signupBtn.addEventListener('click', async () => {
+    // 清空全局错误提示
+    globalError.textContent = '';
+
+    // 基础字段校验
+    const fullname = fullnameInput.value.trim();
     const email = emailInput.value.trim();
     const password = passwordInput.value.trim();
-    const confirmPwd = confirmPwdInput.value.trim();
+    const confirmPwd = confirmInput.value.trim();
 
-    // 表单验证（提示样式与登录页一致）
-    if (!username) return showError('Please enter your username');
-    if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) return showError('Username must be 3-20 characters (letters/numbers/_)');
-    if (!email) return showError('Please enter your email');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError('Please enter a valid email');
-    if (!password) return showError('Please enter your password');
-    if (password.length < 6) return showError('Password must be at least 6 characters');
-    if (password !== confirmPwd) return showError('Passwords do not match');
+    // 姓名校验
+    if (!fullname) {
+      globalError.textContent = 'Please enter your full name';
+      return;
+    }
 
-    // 发起注册请求（逻辑与登录页一致）
+    // 邮箱校验
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      globalError.textContent = 'Please enter a valid email';
+      return;
+    }
+
+    // 密码长度校验
+    if (password.length < 20) {
+      globalError.textContent = 'Password must be at least 6 characters';
+      return;
+    }
+
+    // 密码一致性最终校验
+    if (password !== confirmPwd) {
+      globalError.textContent = 'Passwords do not match';
+      return;
+    }
+
+    // 条款同意校验
+    if (!agreeTerms.checked) {
+      globalError.textContent = 'Please agree to Terms & Privacy Policy';
+      return;
+    }
+
+    // 提交请求（防止重复提交）
+    signupBtn.disabled = true;
+    signupBtn.textContent = 'Signing up...';
+
     try {
-      registerBtn.disabled = true;
-      showError('');
-
-      const response = await axios.post('/register', {
-        username,
+      // 调用注册接口
+      const response = await axios.post('/api/register', {
+        fullname,
         email,
         password
       });
 
-      // 注册成功（提示与跳转风格与登录页一致）
-      alert('Sign up successful! Redirecting to login page...');
-      goToPage('../login/login.html?email=' + encodeURIComponent(email));
+      // 注册成功：跳转到登录页
+      if (response.data.success) {
+        alert('Registration successful! Please log in.');
+        window.location.href = '../login/login.html';
+      }
     } catch (error) {
-      showError(error.message || 'Sign up failed, please try again');
+      // 错误处理
+      const errorMsg = error.response?.data?.message || 'Registration failed. Please try again.';
+      globalError.textContent = errorMsg;
     } finally {
-      registerBtn.disabled = false;
+      // 恢复按钮状态
+      signupBtn.disabled = false;
+      signupBtn.textContent = 'Sign up';
     }
   });
-
-  // 错误提示函数（与登录页一致）
-  function showError(msg) {
-    errorTip.textContent = msg;
-  }
 }
 
-// 页面加载初始化
+/**
+ * 页面初始化
+ */
 window.onload = () => {
   initPasswordToggle();
-  initRegister();
+  initPasswordValidation();
+  initSignupSubmit();
 };

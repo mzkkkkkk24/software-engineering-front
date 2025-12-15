@@ -1,4 +1,4 @@
-/* 基础样式重置（与登录页完全一致） */
+/* 基础样式：与登录页完全一致 */
 * {
   margin: 0;
   padding: 0;
@@ -8,66 +8,65 @@
 body {
   font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   min-height: 100vh;
-  color: #1f2937;
-  background-color: #f5f7fa; /* 页面浅灰背景，与登录页一致 */
+  background-color: #f5f7fa;
   padding: 20px 0;
+  color: #1f2937;
 }
 
-/* 注册页主容器（与登录页中间卡片样式完全一致） */
-.login-container { /* 复用登录页的容器类名，确保样式统一 */
+/* 主容器：中间卡片布局 */
+.auth-container {
   width: 100%;
-  max-width: 1200px; /* 与登录页相同的最大宽度 */
-  min-height: 580px; /* 比登录页稍高（因注册字段更多） */
-  margin: 40px auto; /* 居中布局，与登录页间距一致 */
-  background-color: #ffffff; /* 白色卡片背景 */
-  border-radius: 20px; /* 相同的圆角 */
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); /* 相同的阴影效果 */
-  overflow: hidden;
+  max-width: 1200px;
+  min-height: 620px; /* 比登录页稍高（适配更多字段） */
+  margin: 30px auto;
+  background-color: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   display: flex;
+  overflow: hidden;
 }
 
-/* 左侧插画区域（与登录页布局、样式完全一致） */
-.login-illustration {
-  flex: 0 0 40%; /* 占比与登录页相同 */
-  background-color: #f3f4f6; /* 插画区背景色一致 */
+/* 左侧插画区 */
+.auth-illustration {
+  flex: 0 0 40%;
+  background-color: #f3f4f6;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem;
 }
 
-.illustration-content {
+.illustration-img {
   width: 100%;
   height: 100%;
-  max-width: 500px;
-  max-height: 500px;
-  background-image: url('./images/register-illustration.png'); /* 注册页插画（本地图） */
+  max-width: 300px;
+  max-height: 350px;
+  background-image: url('../login/images/login.png'); /* 本地插画路径 */
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
 }
 
-/* 右侧表单区域（与登录页布局一致） */
-.login-form-container {
-  flex: 0 0 60%; /* 占比与登录页相同 */
+/* 右侧表单区 */
+.auth-form-container {
+  flex: 0 0 60%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
-  background-color: #ffffff;
+  padding: 2.5rem;
 }
 
 .form-wrapper {
   width: 100%;
-  max-width: 380px; /* 与登录页表单最大宽度一致 */
+  max-width: 380px;
   padding: 1rem;
 }
 
-/* 品牌标识（与登录页完全一致） */
+/* 品牌标识 */
 .brand-logo {
   width: 56px;
   height: 56px;
-  margin: 0 auto 2.5rem; /* 与登录页相同的间距 */
+  margin: 0 auto 2.5rem;
   background-color: #1f2937;
   border-radius: 12px;
   display: flex;
@@ -78,67 +77,67 @@ body {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-/* 注册页标题文字（风格与登录页一致，仅内容不同） */
+/* 标题样式 */
 .welcome-title {
-  font-size: 1.5rem; /* 与登录页标题字号一致 */
+  font-size: 2rem;
   font-weight: 600;
-  color: #1f2937; /* 相同的文字颜色 */
+  color: #1f2937;
   margin-bottom: 0.75rem;
+  text-align: center;
   line-height: 1.2;
-  text-align: center; /* 与登录页一致的居中对齐 */
 }
 
 .welcome-subtitle {
-  color: #6b7280; /* 与登录页副标题颜色一致 */
-  font-size: 1.05rem; /* 字号一致 */
-  margin-bottom: 2.5rem; /* 与登录页相同的底部间距 */
+  color: #6b7280;
+  font-size: 1.05rem;
+  margin-bottom: 2.5rem;
   text-align: center;
 }
 
-/* 表单项（与登录页输入框样式完全一致） */
+/* 表单项样式 */
 .form-item {
-  margin-bottom: 1.5rem; /* 项间距与登录页一致 */
+  margin-bottom: 1.5rem;
 }
 
 .form-item label {
   display: block;
-  margin-bottom: 0.5rem; /* 标签与输入框间距一致 */
-  font-size: 0.9rem; /* 字号一致 */
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
   font-weight: 500;
-  color: #374151; /* 标签颜色一致 */
+  color: #374151;
 }
 
 .form-item input {
   width: 100%;
-  height: 48px; /* 输入框高度与登录页一致 */
+  height: 48px;
   padding: 0 1rem;
-  border: 1px solid #e5e7eb; /* 边框样式一致 */
-  border-radius: 10px; /* 输入框圆角一致 */
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
   font-size: 1rem;
-  transition: all 0.2s ease;
-  background-color: #ffffff;
+  transition: all 0.2s;
 }
 
 .form-item input:focus {
-  border-color: #3b82f6; /* 聚焦边框色与登录页一致 */
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); /* 聚焦阴影一致 */
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   outline: none;
 }
 
 .form-item input::placeholder {
-  color: #9ca3af; /* 占位符颜色一致 */
+  color: #9ca3af;
 }
 
-/* 密码输入框容器（与登录页完全一致） */
+/* 密码输入组（带显示/隐藏按钮和匹配提示） */
 .password-item {
   position: relative;
 }
 
-.password-input-wrapper {
+.password-input-group {
   position: relative;
 }
 
-.toggle-password {
+/* 密码显示/隐藏按钮 */
+.toggle-pwd {
   position: absolute;
   right: 0.75rem;
   top: 50%;
@@ -146,104 +145,142 @@ body {
   background: transparent;
   border: none;
   color: #6b7280;
-  cursor: pointer;
   font-size: 1.1rem;
-  padding: 0.25rem;
-  transition: color 0.2s;
+  cursor: pointer;
+  z-index: 2; /* 确保在提示上方 */
 }
 
-.toggle-password:hover {
-  color: #1f2937; /*  hover效果与登录页一致 */
+.toggle-pwd:hover {
+  color: #1f2937;
 }
 
-/* 注册按钮（与登录页按钮样式完全一致，仅文字不同） */
-.login-btn { /* 复用登录页按钮类名，确保样式统一 */
+/* 密码不一致提示样式 */
+.pwd-match-tip {
+  position: absolute;
+  right: 3rem; /* 留出显示/隐藏按钮位置 */
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  color: #ef4444; /* 错误红色，与全局错误提示统一 */
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  opacity: 0; /* 默认隐藏 */
+  transition: opacity 0.2s;
+  white-space: nowrap; /* 防止文字换行 */
+}
+
+.pwd-match-tip.show {
+  opacity: 1; /* 显示提示 */
+}
+
+/* 同意条款样式 */
+.form-actions {
+  margin-bottom: 2rem;
+}
+
+.agree-terms {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.agree-terms input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #1f2937;
+}
+
+/* 按钮样式 */
+.auth-btn {
   width: 100%;
-  height: 50px; /* 按钮高度一致 */
-  background-color: #1f2937; /* 按钮颜色一致 */
+  height: 50px;
+  background-color: #1f2937;
   color: #ffffff;
   border: none;
-  border-radius: 10px; /* 按钮圆角一致 */
+  border-radius: 10px;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  margin-bottom: 1rem; /* 与登录页相同的底部间距 */
+  transition: background-color 0.2s;
+  margin-bottom: 1rem;
 }
 
-.login-btn:hover {
-  background-color: #374151; /* hover颜色一致 */
+.auth-btn:hover {
+  background-color: #374151;
 }
 
-.login-btn:disabled {
+.auth-btn:disabled {
   background-color: #9ca3af;
   cursor: not-allowed;
 }
 
-/* 谷歌注册按钮（与登录页谷歌按钮样式一致） */
-.google-login-btn {
+.google-auth-btn {
   width: 100%;
-  height: 50px; /* 高度与登录页一致 */
-  background-color: #f9fafb; /* 背景色一致 */
+  height: 50px;
+  background-color: #f9fafb;
   color: #374151;
-  border: 1px solid #e5e7eb; /* 边框样式一致 */
-  border-radius: 10px; /* 圆角一致 */
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem; /* 图标与文字间距一致 */
-  transition: all 0.2s ease;
-  margin-bottom: 2.5rem; /* 底部间距与登录页一致 */
+  gap: 0.75rem;
+  transition: all 0.2s;
+  margin-bottom: 2.5rem;
 }
 
-.google-login-btn:hover {
-  background-color: #f3f4f6; /* hover效果一致 */
+.google-auth-btn:hover {
+  background-color: #f3f4f6;
   border-color: #d1d5db;
 }
 
-/* 登录链接区域（与登录页注册链接样式一致） */
-.register-link {
+/* 登录链接样式 */
+.auth-link {
   text-align: center;
-  font-size: 0.9rem; /* 字号一致 */
-  color: #6b7280; /* 文字颜色一致 */
+  font-size: 0.9rem;
+  color: #6b7280;
 }
 
-.register-link a {
-  color: #3b82f6; /* 链接颜色与登录页一致 */
+.auth-link a {
+  color: #3b82f6;
   font-weight: 500;
   text-decoration: none;
-  transition: text-decoration 0.2s;
 }
 
-.register-link a:hover {
-  text-decoration: underline; /* hover效果一致 */
+.auth-link a:hover {
+  text-decoration: underline;
 }
 
-/* 错误提示（与登录页完全一致） */
+/* 全局错误提示 */
 .error-tip {
   height: 24px;
   margin-bottom: 1rem;
-  color: #ef4444; /* 错误色一致 */
+  color: #ef4444;
   font-size: 0.875rem;
-  line-height: 1.5;
+  text-align: center;
 }
 
-/* 响应式适配（与登录页完全一致） */
+/* 响应式适配（移动端） */
 @media (max-width: 768px) {
-  .login-container {
-    max-width: 90%; /* 移动端宽度一致 */
+  .auth-container {
+    flex-direction: column;
+    max-width: 90%;
     min-height: auto;
-    flex-direction: column; /* 改为上下布局，与登录页一致 */
   }
 
-  .login-illustration {
-    flex: 0 0 200px; /* 插画区高度一致 */
+  .auth-illustration {
+    flex: 0 0 220px;
   }
 
-  .login-form-container {
-    flex: 1;
+  .pwd-match-tip {
+    right: 2.5rem; /* 移动端调整提示位置 */
+    font-size: 0.75rem;
   }
 }
