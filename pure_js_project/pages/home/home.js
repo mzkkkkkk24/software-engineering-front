@@ -32,7 +32,7 @@ async function loadCurrentUser() {
     console.error('获取用户信息失败', err);
     if (err.response?.status === 401) {
       localStorage.clear();
-      window.location.href = '../../login/login.html';
+      window.location.href = '../login/login.html';
     }
   }
 }

@@ -168,14 +168,14 @@ body {
   }
 }
 
-/* 平板进一步优化 */
+/* 平板优化 */
 @media (max-width: 992px) {
   .navbar-actions {
     gap: 0.5rem;
   }
 }
 
-/* 手机端隐藏次要按钮，只保留关键 */
+/* 手机端 */
 @media (max-width: 768px) {
   #filterBtn,
   #notificationBtn {

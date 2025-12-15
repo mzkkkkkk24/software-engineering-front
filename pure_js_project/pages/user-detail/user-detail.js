@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   // 检查登录
   const token = localStorage.getItem('token');
   if (!token) {
-    window.location.href = '../../login/login.html';
+    window.location.href = '../login/login.html';
     return;
   }
 
