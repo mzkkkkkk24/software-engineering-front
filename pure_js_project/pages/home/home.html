@@ -40,14 +40,15 @@
         <button class="action-btn" id="filterBtn">
           <i class="fas fa-filter"></i>
         </button>
-        <button class="action-btn" id="notificationBtn">
+        <button class="action-btn" id="notificationBtn" data-tooltip="通知消息">
           <i class="fas fa-bell"></i>
         </button>
-        <button class="action-btn" id="friendsBtn">
+        <button class="action-btn" id="friendsBtn" data-tooltip="好友列表">
           <i class="fas fa-user-friends"></i>
         </button>
-        <div class="user-avatar" id="userMenuBtn">
-          <img src="../../common/images/avatar-default.png" alt="用户头像" id="userAvatar">
+        
+        <div class="user-avatar avatar-container" id="userMenuBtn" style="width:44px;height:44px;" data-tooltip="个人中心">
+          <img src="../../common/images/test.png" alt="用户头像" id="userAvatar" class="avatar">
         </div>
       </div>
     </div>
@@ -87,7 +88,7 @@
       <!-- 发布框 -->
       <div class="post-box">
         <div class="user-info">
-          <img src="../../common/images/avatar-default.png" alt="用户头像" id="postBoxAvatar">
+          <img src="../../common/images/test.png" alt="用户头像" id="postBoxAvatar">
           <button class="create-post-btn" id="createPostBtn">
             分享你的内容...
           </button>
@@ -115,6 +116,11 @@
       
       <div class="modal-body">
         <div class="post-form">
+          <div class="title-input" style="margin-bottom: 1rem;">
+                <label style="display:block; margin-bottom:0.5rem; font-weight:500; color:#374151;">标题 <span style="color:#ef4444;">*</span></label>
+                <input type="text" id="postTitle" placeholder="给你的内容起一个吸引人的标题..." 
+                       style="width:100%; padding:0.8rem 1rem; border:1px solid #e2e8f0; border-radius:12px; font-size:1rem;">
+              </div>
           <textarea id="postText" placeholder="分享你的想法..."></textarea>
           
           <div class="media-upload">
@@ -158,14 +164,16 @@
       <div class="friend-requests" id="friendRequests"></div>
     </div>
     
-    <!-- 搜索用户 -->
+    <!-- 搜索用户（改为直接输入用户名添加好友） -->
     <div class="section">
-      <h3>查找用户</h3>
-      <div class="search-user">
-        <input type="text" id="searchUserInput" placeholder="输入用户名...">
-        <button id="searchUserBtn"><i class="fas fa-search"></i></button>
+     <h3>添加好友</h3>
+      <div class="search-user" style="align-items:end;">
+        <input type="text" id="addFriendInput" placeholder="输入用户名..." style="flex:1;">
+        <button id="addFriendBtn" style="padding:0.8rem 1.2rem; background:#3b82f6; color:white; border:none; border-radius:12px; cursor:pointer;">
+          添加
+        </button>
       </div>
-      <div class="search-results" id="searchResults"></div>
+      <div id="addFriendResult" style="margin-top:0.8rem; min-height:24px; font-size:0.9rem;"></div>
     </div>
     
     <!-- 我的好友列表 -->

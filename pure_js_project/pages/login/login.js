@@ -1,4 +1,4 @@
-// login.js - 完整对接 /api/login 接口
+// 根据角色跳转不同页面
 
 document.addEventListener('DOMContentLoaded', function () {
   const usernameInput = document.getElementById('username');
@@ -49,13 +49,12 @@ document.addEventListener('DOMContentLoaded', function () {
     loginBtn.textContent = '登录中...';
 
     try {
-      // 调用真实接口：POST /api/login
+      // 调用接口：POST /api/login
       const response = await axios.post('/api/login', {
         username: username,
         password: password
       });
 
-      // 文档中成功返回 code === 200
       if (response.data.code === 200) {
         const { token, user } = response.data.data;
 
@@ -63,19 +62,22 @@ document.addEventListener('DOMContentLoaded', function () {
         localStorage.setItem('token', token);
         localStorage.setItem('userInfo', JSON.stringify(user));
 
-        // 可选：保存角色用于后续判断是否管理员
+        // 判断角色并跳转
+        let targetPage;
         if (user.role === 'ADMIN') {
-          localStorage.setItem('isAdmin', 'true');
+          targetPage = '../admin/admin.html'; // 管理员后台
         } else {
-          localStorage.removeItem('isAdmin');
+          targetPage = '../home/home.html';   // 普通用户首页
         }
 
-        alert('登录成功！');
-        
-        // 跳转：优先使用 URL 中的 redirect，否则跳转首页
+        // 支持 URL 中的 redirect 参数
         const params = new URLSearchParams(window.location.search);
         const redirect = params.get('redirect');
-        window.location.href = redirect ? decodeURIComponent(redirect) : '../../home/home.html';
+        if (redirect) {
+          window.location.href = decodeURIComponent(redirect);
+        } else {
+          window.location.href = targetPage;
+        }
 
       } else {
         showError(response.data.message || '登录失败');
@@ -109,56 +111,36 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
-// 鼠标跟随光点效果
+// 主题切换功能（浅色 ↔ 深色）
 document.addEventListener('DOMContentLoaded', function() {
-  const glow = document.querySelector('.mouse-glow');
+  const body = document.body;
+  const toggleBtn = document.getElementById('themeToggleBtn');
+  const icon = toggleBtn.querySelector('i');
 
-  if (glow) {
-    document.addEventListener('mousemove', (e) => {
-      glow.style.left = e.clientX + 'px';
-      glow.style.top = e.clientY + 'px';
-    });
-
-    // 鼠标离开页面时隐藏光点
-    document.addEventListener('mouseleave', () => {
-      glow.style.opacity = '0';
-    });
-
-    document.addEventListener('mouseenter', () => {
-      glow.style.opacity = '0.6';
-    });
-  }
-});
-
-// 新增：点击产生涟漪波纹 + 鼠标跟随光点
-document.addEventListener('DOMContentLoaded', function() {
-  const bg = document.querySelector('.dynamic-bg');
-  const glow = document.querySelector('.mouse-glow');
-
-  // 鼠标跟随光点
-  if (glow) {
-    document.addEventListener('mousemove', (e) => {
-      glow.style.left = `${e.clientX}px`;
-      glow.style.top = `${e.clientY}px`;
-    });
+  // 从本地存储加载主题
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    body.classList.add('dark-theme');
+    icon.classList.remove('fa-moon');
+    icon.classList.add('fa-sun');
+  } else {
+    body.classList.remove('dark-theme');
+    icon.classList.remove('fa-sun');
+    icon.classList.add('fa-moon');
   }
 
-  // 点击产生涟漪
-  document.addEventListener('click', (e) => {
-    const ripple = document.createElement('div');
-    ripple.classList.add('ripple');
-    ripple.style.left = `${e.clientX}px`;
-    ripple.style.top = `${e.clientY}px`;
-    ripple.style.width = '50px';
-    ripple.style.height = '50px';
-    ripple.style.marginLeft = '-25px';
-    ripple.style.marginTop = '-25px';
-
-    bg.appendChild(ripple);
-
-    // 动画结束后移除元素，避免堆积
-    ripple.addEventListener('animationend', () => {
-      ripple.remove();
-    });
+  // 点击切换
+  toggleBtn.addEventListener('click', () => {
+    if (body.classList.contains('dark-theme')) {
+      body.classList.remove('dark-theme');
+      icon.classList.remove('fa-sun');
+      icon.classList.add('fa-moon');
+      localStorage.setItem('theme', 'light');
+    } else {
+      body.classList.add('dark-theme');
+      icon.classList.remove('fa-moon');
+      icon.classList.add('fa-sun');
+      localStorage.setItem('theme', 'dark');
+    }
   });
 });

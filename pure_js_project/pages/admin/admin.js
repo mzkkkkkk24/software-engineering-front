@@ -1,17 +1,34 @@
-// admin.js - 完整对接管理员接口
-
 let userPage = 1;
 let contentPage = 1;
 const pageSize = 10;
-let userHasMore = true;
-let contentHasMore = true;
+
+function showToast(message, type = 'success') {
+  let container = document.querySelector('.toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+    <span>${message}</span>
+  `;
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(() => {
+    toast.classList.remove('show');
+    toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+  }, 3000);
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   // 检查管理员权限
   const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
   if (!userInfo || userInfo.role !== 'ADMIN') {
-    alert('权限不足，请使用管理员账号登录');
-    window.location.href = '../login/login.html';
+    showToast('权限不足，请使用管理员账号登录', 'error');
+    setTimeout(() => window.location.href = '../login/login.html', 1500);
     return;
   }
 
@@ -25,38 +42,46 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 侧边栏切换
   document.querySelectorAll('.menu-item').forEach(item => {
-    item.addEventListener('click', async () => {
+    item.addEventListener('click', () => {
       document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
       item.classList.add('active');
-
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       document.getElementById(item.dataset.tab + '-tab').classList.add('active');
 
       if (item.dataset.tab === 'users') {
         userPage = 1;
-        userHasMore = true;
-        await loadUsers();
+        loadUsers();
       } else if (item.dataset.tab === 'contents') {
         contentPage = 1;
-        contentHasMore = true;
-        await loadContents();
+        loadContents();
       }
     });
   });
 
   // 默认加载用户管理
-  await loadUsers();
+  loadUsers();
 
-  // 搜索
-  document.getElementById('userSearch').addEventListener('input', () => { userPage = 1; loadUsers(); });
-  document.getElementById('contentSearch').addEventListener('input', () => { contentPage = 1; loadContents(); });
+  // 搜索功能
+  const debounce = (fn, delay) => {
+    let timer;
+    return () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(), delay);
+    };
+  };
+
+  document.getElementById('userSearch').addEventListener('input', debounce(() => { userPage = 1; loadUsers(); }, 500));
+  document.getElementById('contentSearch').addEventListener('input', debounce(() => { contentPage = 1; loadContents(); }, 500));
+
+  document.getElementById('userSearchBtn').addEventListener('click', () => { userPage = 1; loadUsers(); });
+  document.getElementById('contentSearchBtn').addEventListener('click', () => { contentPage = 1; loadContents(); });
 });
 
 // 加载用户列表
 async function loadUsers() {
   const keyword = document.getElementById('userSearch').value.trim();
   const tbody = document.querySelector('#usersTable tbody');
-  tbody.innerHTML = '<tr><td colspan="5">加载中...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;">加载中...</td></tr>';
 
   try {
     const res = await axios.get('/api/admin/users', {
@@ -66,12 +91,12 @@ async function loadUsers() {
     if (res.data.code === 200) {
       const { records, pages } = res.data.data;
       renderUsers(records);
-      userHasMore = userPage < pages;
-      userPage++;
-      renderPagination('usersPagination', userPage - 1, pages, loadUsers);
+      renderPagination('usersPagination', userPage, pages, p => { userPage = p; loadUsers(); });
+    } else {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;">暂无数据</td></tr>';
     }
   } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="5">加载失败</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:red;">加载失败</td></tr>';
     console.error(err);
   }
 }
@@ -81,16 +106,19 @@ function renderUsers(users) {
   tbody.innerHTML = '';
 
   if (users.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5">暂无用户</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;">暂无用户</td></tr>';
     return;
   }
 
   users.forEach(user => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><img src="${user.avatar || '../../common/images/avatar-default.png'}" alt="${user.username}"></td>
+      <td style="cursor:pointer;" onclick="window.location.href='../user-detail/user-detail.html?userId=${user.id}'">
+        <img src="${user.avatar || '../../common/images/avatar-default.png'}" alt="头像" style="width:40px;height:40px;border-radius:50%;">
+      </td>
       <td>${user.username}</td>
-      <td>${user.registerTime || user.createTime}</td>
+      <td>${user.nickname || '-'}</td>
+      <td>${new Date(user.createTime).toLocaleString()}</td>
       <td>${user.postCount || 0}</td>
       <td><button class="delete-btn" data-id="${user.id}">删除用户</button></td>
     `;
@@ -100,13 +128,13 @@ function renderUsers(users) {
   // 删除用户
   document.querySelectorAll('#usersTable .delete-btn').forEach(btn => {
     btn.onclick = async () => {
-      if (confirm('确定删除该用户及其所有内容？此操作不可恢复！')) {
+      if (confirm('确定删除该用户吗？此操作不可恢复！')) {
         try {
           await axios.delete(`/api/admin/user/${btn.dataset.id}`);
-          alert('用户已删除');
+          showToast('用户已删除', 'success');
           loadUsers();
         } catch (err) {
-          alert('删除失败：' + (err.response?.data?.message || '未知错误'));
+          showToast(err.response?.data?.message || '删除失败', 'error');
         }
       }
     };
@@ -117,7 +145,7 @@ function renderUsers(users) {
 async function loadContents() {
   const keyword = document.getElementById('contentSearch').value.trim();
   const container = document.getElementById('contentsList');
-  container.innerHTML = '<p style="grid-column:1/-1;text-align:center;">加载中...</p>';
+  container.innerHTML = '<div style="text-align:center;padding:3rem;">加载中...</div>';
 
   try {
     const res = await axios.get('/api/admin/contents', {
@@ -127,12 +155,12 @@ async function loadContents() {
     if (res.data.code === 200) {
       const { records, pages } = res.data.data;
       renderContents(records);
-      contentHasMore = contentPage < pages;
-      contentPage++;
-      renderPagination('contentsPagination', contentPage - 1, pages, loadContents);
+      renderPagination('contentsPagination', contentPage, pages, p => { contentPage = p; loadContents(); });
+    } else {
+      container.innerHTML = '<div style="text-align:center;padding:3rem;">暂无内容</div>';
     }
   } catch (err) {
-    container.innerHTML = '<p style="grid-column:1/-1;text-align:center;">加载失败</p>';
+    container.innerHTML = '<div style="text-align:center;padding:3rem;color:red;">加载失败</div>';
     console.error(err);
   }
 }
@@ -142,7 +170,7 @@ function renderContents(contents) {
   container.innerHTML = '';
 
   if (contents.length === 0) {
-    container.innerHTML = '<p style="grid-column:1/-1;text-align:center;">暂无内容</p>';
+    container.innerHTML = '<div style="text-align:center;padding:3rem;">暂无内容</div>';
     return;
   }
 
@@ -153,13 +181,13 @@ function renderContents(contents) {
       <div class="header">
         <img src="${content.avatar || '../../common/images/avatar-default.png'}" alt="${content.username}">
         <div>
-          <strong>${content.username}</strong><br>
-          <small>${content.createTime || content.time}</small>
+          <strong>${content.nickname || content.username}</strong><br>
+          <small>${new Date(content.createTime).toLocaleString()}</small>
         </div>
       </div>
       <div class="body">
         <p>${content.text || ''}</p>
-        ${content.type === 'IMAGE' ? content.mediaUrls?.map(url => `<img src="${url}" class="media">`).join('') || '' : ''}
+        ${content.type === 'IMAGE' ? (content.mediaUrls || []).map(url => `<img src="${url}" class="media">`).join('') : ''}
         ${content.type === 'VIDEO' ? `<video src="${content.mediaUrls?.[0] || ''}" controls class="media"></video>` : ''}
       </div>
       <div class="footer">
@@ -176,40 +204,43 @@ function renderContents(contents) {
       if (confirm('确定删除这条内容吗？')) {
         try {
           await axios.delete(`/api/admin/content/${btn.dataset.id}`);
-          alert('内容已删除');
+          showToast('内容已删除', 'success');
           loadContents();
         } catch (err) {
-          alert('删除失败：' + (err.response?.data?.message || '未知错误'));
+          showToast(err.response?.data?.message || '删除失败', 'error');
         }
       }
     };
   });
 }
 
-// 简单分页渲染
-function renderPagination(containerId, current, total, loadFn) {
+// 分页组件
+function renderPagination(containerId, currentPage, totalPages, onPageChange) {
   const container = document.getElementById(containerId);
   container.innerHTML = '';
 
-  if (total <= 1) return;
+  if (totalPages <= 1) return;
 
   const prev = document.createElement('button');
   prev.textContent = '上一页';
-  prev.disabled = current === 1;
-  prev.onclick = () => { /* 重新加载上一页 */ loadFn(); };
+  prev.disabled = currentPage === 1;
+  prev.onclick = () => onPageChange(currentPage - 1);
   container.appendChild(prev);
 
-  for (let i = 1; i <= total; i++) {
+  const start = Math.max(1, currentPage - 3);
+  const end = Math.min(totalPages, currentPage + 3);
+
+  for (let i = start; i <= end; i++) {
     const btn = document.createElement('button');
     btn.textContent = i;
-    btn.classList.toggle('active', i === current);
-    btn.onclick = () => { /* 跳转指定页 */ };
+    btn.classList.toggle('active', i === currentPage);
+    btn.onclick = () => onPageChange(i);
     container.appendChild(btn);
   }
 
   const next = document.createElement('button');
   next.textContent = '下一页';
-  next.disabled = current === total;
-  next.onclick = loadFn;
+  next.disabled = currentPage === totalPages;
+  next.onclick = () => onPageChange(currentPage + 1);
   container.appendChild(next);
 }

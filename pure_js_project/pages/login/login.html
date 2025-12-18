@@ -15,10 +15,13 @@
     <div class="blob"></div>
     <div class="blob"></div>
     <div class="blob"></div>
-
-    <!--鼠标跟随光点 -->
-  <div class="mouse-glow"></div>
   </div>
+
+  <!-- 主题切换按钮（左上角固定） -->
+  <button class="theme-toggle-btn" id="themeToggleBtn" title="切换主题">
+    <i class="fas fa-moon"></i> <!-- 默认显示月亮（表示可切换到深色） -->
+  </button>
+
   <div class="login-container">
     <div class="login-illustration">
       <div class="illustration-content"></div>
@@ -36,7 +39,7 @@
         <div class="error-tip" id="errorTip"></div>
         
         <form class="login-form">
-          <!-- 用户名（文档中为 username） -->
+          <!-- 用户名 -->
           <div class="form-item">
             <label for="username">用户名</label>
             <input type="text" id="username" placeholder="请输入用户名" autocomplete="username" required>
@@ -73,6 +76,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="../../common/js/utils.js"></script>
+  <script src="../../common/js/axios-config.js"></script>
   <script src="login.js"></script>
 </body>
 </html>

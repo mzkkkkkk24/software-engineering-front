@@ -604,3 +604,113 @@ body {
 .user-item button.added {
   background: #10b981;
 }
+
+/* ==================== 右上角按钮悬停文字提示（Tooltip） ==================== */
+
+/* 统一为 navbar-actions 中的按钮添加 tooltip */
+.navbar-actions .action-btn,
+.navbar-actions .user-avatar {
+  position: relative; 
+}
+
+/* 悬停时显示的提示文字 */
+.navbar-actions .action-btn::after,
+.navbar-actions .user-avatar::after {
+  content: attr(data-tooltip);  /* 从 data-tooltip 属性读取文字 */
+  position: absolute;
+  bottom: -32px;                /* 提示框在按钮下方 */
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+  pointer-events: none;         /* 不阻挡鼠标事件 */
+  z-index: 1001;
+}
+
+/* 小三角箭头 */
+.navbar-actions .action-btn::before,
+.navbar-actions .user-avatar::before {
+  content: '';
+  position: absolute;
+  bottom: -8px;                 /* 箭头位置 */
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: rgba(0, 0, 0, 0.85);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+  z-index: 1001;
+}
+
+/* 悬停时显示 tooltip */
+.navbar-actions .action-btn:hover::after,
+.navbar-actions .action-btn:hover::before,
+.navbar-actions .user-avatar:hover::after,
+.navbar-actions .user-avatar:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 手机端不显示 tooltip（避免误触） */
+@media (max-width: 768px) {
+  .navbar-actions .action-btn::after,
+  .navbar-actions .action-btn::before,
+  .navbar-actions .user-avatar::after,
+  .navbar-actions .user-avatar::before {
+    display: none;
+  }
+}
+
+/* 用户评分区域 */
+.user-rating {
+  padding: 0.8rem 1.5rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+/* 可交互星星 */
+.rating-stars.interactive i {
+  font-size: 1.4rem;
+  color: #fbbf24;
+  cursor: pointer;
+  transition: transform 0.2s;
+  margin-right: 4px;
+}
+
+.rating-stars.interactive i:hover {
+  transform: scale(1.2);
+}
+
+.rating-stars.interactive .rated {
+  color: #fbbf24;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;        /* 关键：裁剪填充容器，保持比例 */
+  object-position: center;  /* 裁剪时以图片中心为主（人脸/主体不会被切掉） */
+  border-radius: 50%;       /* 圆形 */
+  display: block;           /* 去除 img 默认底部小间隙 */
+}
+
+/* 可选：给所有头像容器加一个统一的类，方便控制大小 */
+.avatar-container {
+  width: 48px;              /* 根据位置调整 */
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;         /* 保险：防止万一溢出 */
+  flex-shrink: 0;           /* 防止在 flex 布局中被压缩 */
+  background: #e2e8f0;      /* 可选：加载前灰色底 */
+}

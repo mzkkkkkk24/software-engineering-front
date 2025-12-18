@@ -182,3 +182,38 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
+
+// 主题切换功能（与登录页一致）
+document.addEventListener('DOMContentLoaded', function() {
+  const body = document.body;
+  const toggleBtn = document.getElementById('themeToggleBtn');
+  const icon = toggleBtn.querySelector('i');
+
+  // 加载保存的主题
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    body.classList.add('dark-theme');
+    icon.classList.remove('fa-moon');
+    icon.classList.add('fa-sun');
+  } else {
+    body.classList.remove('dark-theme');
+    icon.classList.remove('fa-sun');
+    icon.classList.add('fa-moon');
+  }
+
+  // 点击切换
+  toggleBtn.addEventListener('click', () => {
+    if (body.classList.contains('dark-theme')) {
+      body.classList.remove('dark-theme');
+      icon.classList.remove('fa-sun');
+      icon.classList.add('fa-moon');
+      localStorage.setItem('theme', 'light');
+    } else {
+      body.classList.add('dark-theme');
+      icon.classList.remove('fa-moon');
+      icon.classList.add('fa-sun');
+      localStorage.setItem('theme', 'dark');
+    }
+  });
+});
+

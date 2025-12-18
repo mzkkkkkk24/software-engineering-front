@@ -41,22 +41,24 @@
       <!-- 用户管理面板 -->
       <div id="users-tab" class="tab-panel active">
         <h2>用户管理</h2>
-        <div class="search-bar">
-          <input type="text" id="userSearch" placeholder="搜索用户名或昵称...">
-          <button id="userSearchBtn"><i class="fas fa-search"></i></button>
-        </div>
+        <!-- 用户管理搜索按钮 -->
+<div class="search-bar">
+  <input type="text" id="userSearch" placeholder="搜索用户名...">
+  <button id="userSearchBtn"><i class="fas fa-search"></i></button>
+</div>
         <table class="data-table" id="usersTable">
           <thead>
             <tr>
               <th>头像</th>
               <th>用户名</th>
-              <th>昵称</th>
               <th>注册时间</th>
               <th>内容数</th>
               <th>操作</th>
             </tr>
           </thead>
-          <tbody></tbody>
+          <tbody>
+            <!-- 动态填充 -->
+          </tbody>
         </table>
         <div class="pagination" id="usersPagination"></div>
       </div>
@@ -64,19 +66,23 @@
       <!-- 内容管理面板 -->
       <div id="contents-tab" class="tab-panel">
         <h2>内容管理</h2>
-        <div class="search-bar">
-          <input type="text" id="contentSearch" placeholder="搜索内容或用户名...">
-          <button id="contentSearchBtn"><i class="fas fa-search"></i></button>
+        <!-- 内容管理搜索按钮 -->
+<div class="search-bar">
+  <input type="text" id="contentSearch" placeholder="搜索内容或用户名...">
+  <button id="contentSearchBtn"><i class="fas fa-search"></i></button>
+</div>
+        <div class="content-grid" id="contentsList">
+          <!-- 动态填充内容卡片 -->
         </div>
-        <div class="content-grid" id="contentsList"></div>
         <div class="pagination" id="contentsPagination"></div>
       </div>
     </div>
   </div>
-
+<!-- 在 admin.html 的 <body> 末尾，admin.js 之前添加这一行 -->
+<script src="mock-data.js"></script>
   <!-- 脚本 -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="../../common/js/axios-config.js"></script> 
   <script src="admin.js"></script>
+  <script src="../../common/js/axios-config.js"></script>
 </body>
 </html>

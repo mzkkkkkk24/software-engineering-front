@@ -379,3 +379,90 @@ body {
     opacity: 0;
   }
 }
+
+/* 主题切换按钮 */
+.theme-toggle-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: #374151;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.theme-toggle-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* 深色主题 */
+body.dark-theme {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+body.dark-theme .auth-container {
+  background-color: #1e293b;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* 深色动态背景适配 */
+body.dark-theme .dynamic-bg .blob:nth-child(1) {
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.5), transparent 70%);
+}
+
+body.dark-theme .dynamic-bg .blob:nth-child(2) {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.45), transparent 70%);
+}
+
+body.dark-theme .dynamic-bg .blob:nth-child(3) {
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.4), transparent 70%);
+}
+
+body.dark-theme .mouse-glow {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.4), transparent 70%);
+}
+
+body.dark-theme .ripple {
+  background: rgba(139, 92, 246, 0.4);
+}
+
+/* 表单深色适配 */
+body.dark-theme .welcome-title,
+body.dark-theme .welcome-subtitle,
+body.dark-theme .form-item label,
+body.dark-theme .form-actions span,
+body.dark-theme .auth-link {
+  color: #e2e8f0;
+}
+
+body.dark-theme input,
+body.dark-theme .password-input-group {
+  background-color: #334155;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+body.dark-theme input::placeholder {
+  color: #94a3b8;
+}
+
+body.dark-theme .toggle-pwd {
+  color: #cbd5e1;
+}
+
+body.dark-theme .pwd-match-tip {
+  color: #fca5a5;
+}

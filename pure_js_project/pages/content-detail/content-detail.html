@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>内容详情 - MediaShare</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- 公共样式 -->
+  <link rel="stylesheet" href="../../common/css/global.css">
+  <link rel="stylesheet" href="../../common/css/common.css">
+  <!-- 详情页专属样式 -->
+  <link rel="stylesheet" href="content-detail.css">
+</head>
+<body>
+
+  <!-- 顶部导航栏（复用 home 的结构，保持一致） -->
+  <header class="navbar">
+    <div class="container">
+      <div class="brand" onclick="window.location.href='../home/home.html'">
+        <i class="fas fa-compass"></i>
+        <span>MediaShare</span>
+      </div>
+      <div class="navbar-actions">
+        <div class="user-avatar" id="userMenuBtn">
+          <img src="../../common/images/avatar-default.png" alt="用户头像" id="userAvatar">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container detail-container">
+    <!-- 内容详情卡片 -->
+    <div class="content-detail-card" id="contentDetailCard">
+      <!-- 动态渲染 -->
+    </div>
+
+    <!-- 评论区 -->
+    <div class="comments-section">
+      <h2 class="comments-title">评论 <span id="commentCount">0</span></h2>
+
+      <!-- 发布评论 -->
+      <div class="comment-form">
+        <img src="../../common/images/avatar-default.png" alt="头像" id="currentUserAvatar">
+        <textarea id="commentInput" placeholder="写下你的评论..."></textarea>
+        <button id="submitCommentBtn">发布</button>
+      </div>
+
+      <!-- 评论列表 -->
+      <div class="comments-list" id="commentsList">
+        <!-- 动态加载评论 -->
+      </div>
+
+      <!-- 加载更多评论 -->
+      <button class="load-more-btn" id="loadMoreCommentsBtn" style="display:none;">加载更多评论</button>
+    </div>
+  </main>
+
+  <!-- 脚本 -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="../../common/js/utils.js"></script>
+  <script src="../../common/js/axios-config.js"></script>
+  <script src="content-detail.js"></script>
+</body>
+</html>
