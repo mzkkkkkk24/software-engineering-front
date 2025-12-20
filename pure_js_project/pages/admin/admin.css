@@ -23,6 +23,25 @@ body {
   z-index: 1000;
 }
 
+.navbar .container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  height: 100%;
+}
+
+.navbar-inner {
+  display: flex;
+  justify-content: space-between;  /* 左右两端对齐 */
+  align-items: center;
+  height: 100%;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+}
+
 .navbar .brand {
   color: white;
   font-size: 1.5rem;
@@ -36,6 +55,12 @@ body {
   padding: 0.6rem 1.2rem;
   border-radius: 8px;
   cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.3s;
+}
+
+.logout-btn:hover {
+  background: #dc2626;
 }
 
 .admin-container {

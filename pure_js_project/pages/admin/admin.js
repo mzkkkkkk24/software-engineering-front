@@ -114,7 +114,7 @@ function renderUsers(users) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="cursor:pointer;" onclick="window.location.href='../user-detail/user-detail.html?userId=${user.id}'">
-        <img src="${user.avatar || '../../common/images/avatar-default.png'}" alt="头像" style="width:40px;height:40px;border-radius:50%;">
+        <img src="${user.avatar || '../../common/images/test.png'}" alt="头像" style="width:40px;height:40px;border-radius:50%;">
       </td>
       <td>${user.username}</td>
       <td>${user.nickname || '-'}</td>
@@ -141,11 +141,11 @@ function renderUsers(users) {
   });
 }
 
-// 加载内容列表
+// 加载内容列表（分页）
 async function loadContents() {
   const keyword = document.getElementById('contentSearch').value.trim();
-  const container = document.getElementById('contentsList');
-  container.innerHTML = '<div style="text-align:center;padding:3rem;">加载中...</div>';
+  const tbody = document.querySelector('#contentsTable tbody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;">加载中...</td></tr>';
 
   try {
     const res = await axios.get('/api/admin/contents', {
@@ -157,55 +157,55 @@ async function loadContents() {
       renderContents(records);
       renderPagination('contentsPagination', contentPage, pages, p => { contentPage = p; loadContents(); });
     } else {
-      container.innerHTML = '<div style="text-align:center;padding:3rem;">暂无内容</div>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;">暂无数据</td></tr>';
     }
   } catch (err) {
-    container.innerHTML = '<div style="text-align:center;padding:3rem;color:red;">加载失败</div>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:red;">加载失败</td></tr>';
     console.error(err);
   }
 }
 
 function renderContents(contents) {
-  const container = document.getElementById('contentsList');
-  container.innerHTML = '';
+  const tbody = document.querySelector('#contentsTable tbody');
+  tbody.innerHTML = '';
 
   if (contents.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:3rem;">暂无内容</div>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;">暂无内容</td></tr>';
     return;
   }
 
   contents.forEach(content => {
-    const card = document.createElement('div');
-    card.className = 'content-card';
-    card.innerHTML = `
-      <div class="header">
-        <img src="${content.avatar || '../../common/images/avatar-default.png'}" alt="${content.username}">
+    const mediaHtml = content.type === 'IMAGE' 
+      ? (content.mediaUrls || []).map(url => `<img src="${url}" style="width:80px;height:80px;object-fit:cover;margin:5px;border-radius:8px;">`).join('')
+      : content.type === 'VIDEO' 
+        ? `<video src="${content.mediaUrls?.[0] || ''}" style="width:150px;height:100px;object-fit:cover;" controls></video>`
+        : '无媒体';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="display:flex;align-items:center;gap:10px;">
+        <img src="${content.avatar || '../../common/images/test.png'}" style="width:40px;height:40px;border-radius:50%;">
         <div>
           <strong>${content.nickname || content.username}</strong><br>
-          <small>${new Date(content.createTime).toLocaleString()}</small>
+          <small>ID: ${content.userId}</small>
         </div>
-      </div>
-      <div class="body">
-        <p>${content.text || ''}</p>
-        ${content.type === 'IMAGE' ? (content.mediaUrls || []).map(url => `<img src="${url}" class="media">`).join('') : ''}
-        ${content.type === 'VIDEO' ? `<video src="${content.mediaUrls?.[0] || ''}" controls class="media"></video>` : ''}
-      </div>
-      <div class="footer">
-        <span>ID: ${content.id}</span>
-        <button class="delete-btn" data-id="${content.id}">删除内容</button>
-      </div>
+      </td>
+      <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">${content.text || '(无文本)'}</td>
+      <td>${mediaHtml}</td>
+      <td>${new Date(content.createTime).toLocaleString()}</td>
+      <td><button class="delete-btn" data-id="${content.id}">删除内容</button></td>
     `;
-    container.appendChild(card);
+    tbody.appendChild(tr);
   });
 
-  // 删除内容
-  document.querySelectorAll('#contentsList .delete-btn').forEach(btn => {
+  // 删除内容（绑定事件）
+  document.querySelectorAll('#contentsTable .delete-btn').forEach(btn => {
     btn.onclick = async () => {
-      if (confirm('确定删除这条内容吗？')) {
+      if (confirm('确定删除这条内容吗？此操作不可恢复！')) {
         try {
           await axios.delete(`/api/admin/content/${btn.dataset.id}`);
           showToast('内容已删除', 'success');
-          loadContents();
+          loadContents();  // 刷新当前页
         } catch (err) {
           showToast(err.response?.data?.message || '删除失败', 'error');
         }

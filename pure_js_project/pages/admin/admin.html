@@ -16,18 +16,18 @@
   <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-  <!-- 顶部导航 -->
-  <header class="navbar">
-    <div class="container">
-      <div class="brand" onclick="window.location.href='../home/home.html'">
-        <i class="fas fa-compass"></i>
-        <span>MediaShare 管理后台</span>
-      </div>
-      <div class="navbar-actions">
-        <button class="logout-btn" id="logoutBtn">退出登录</button>
-      </div>
+<!-- 顶部导航 -->
+<header class="navbar">
+  <div class="container navbar-inner">
+    <div class="brand" onclick="window.location.href='../home/home.html'">
+      <i class="fas fa-compass"></i>
+      <span>MediaShare 管理后台</span>
     </div>
-  </header>
+    <div class="navbar-right">
+      <button class="logout-btn" id="logoutBtn">退出登录</button>
+    </div>
+  </div>
+</header>
 
   <div class="admin-container">
     <div class="sidebar">
@@ -64,15 +64,24 @@
       <!-- 内容管理面板 -->
       <div id="contents-tab" class="tab-panel">
         <h2>内容管理</h2>
-        <div class="search-bar">
+       <div class="search-bar">
           <input type="text" id="contentSearch" placeholder="搜索内容或用户名...">
           <button id="contentSearchBtn"><i class="fas fa-search"></i></button>
         </div>
-        <div class="content-grid" id="contentsList"></div>
+        <table class="data-table" id="contentsTable">
+          <thead>
+            <tr>
+              <th>发布者</th>
+              <th>内容文本</th>
+              <th>媒体</th>
+              <th>发布时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+         <tbody></tbody>
+        </table>
         <div class="pagination" id="contentsPagination"></div>
       </div>
-    </div>
-  </div>
 
   <!-- 脚本 -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>

@@ -20,6 +20,41 @@ document.addEventListener('DOMContentLoaded', async function() {
   initInteractions();
   loadContentList(true); // 初次加载
   initTopSearch();  
+
+  //无限滚动
+  let loading = false; // 防止重复触发
+
+  const scrollHandler = async () => {
+    if (loading || !hasMore) return;
+
+    // 距离底部 300px 以内时触发加载
+    const nearBottom = 
+      window.innerHeight + window.scrollY >= document.body.offsetHeight - 300;
+
+    if (nearBottom) {
+      loading = true;
+      document.getElementById('loadingMore').style.display = 'block';
+
+      await loadContentList(); // 加载下一页（不刷新）
+
+      loading = false;
+    }
+  };
+
+  // 滚动事件（防抖优化）
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        scrollHandler();
+        ticking = false;
+      });
+    }
+    ticking = true;
+  });
+
+  // 页面初次加载完成后也检查一次（防止内容少不需要滚动）
+  setTimeout(scrollHandler, 500);
   
 });
 
@@ -29,7 +64,7 @@ async function loadCurrentUser() {
     if (res.data.code === 200) {
       currentUser = res.data.data;
       // 更新头像
-      document.querySelector('#userMenuBtn img').src = currentUser.avatar || '../../common/images/avatar-default.png';
+      document.querySelector('#userMenuBtn img').src = currentUser.avatar || '../../common/images/test.png';
     }
   } catch (err) {
     console.error('获取用户信息失败', err);
@@ -40,7 +75,7 @@ async function loadCurrentUser() {
   }
 }
 
-// 加载内容列表（支持分页）
+// 加载内容列表
 async function loadContentList(isRefresh = false) {
   if (isRefresh) {
     currentPage = 1;
@@ -69,7 +104,14 @@ async function loadContentList(isRefresh = false) {
 
       currentPage++;
       hasMore = currentPage <= pages;
-      document.getElementById('loadMoreBtn').style.display = hasMore ? 'block' : 'none';
+
+      // 隐藏加载中提示
+      document.getElementById('loadingMore').style.display = 'none';
+
+      // 显示“没有更多”提示
+      if (!hasMore) {
+        document.getElementById('noMore').style.display = 'block';
+      }
     }
   } catch (err) {
     console.error('加载内容失败', err);
@@ -110,24 +152,21 @@ function createContentElement(content) {
       <button class="delete-btn" data-id="${content.id}"><i class="fas fa-trash"></i> 删除</button>
     </div>` : '';
 
-  // ===== 新增：生成静态星星（平均分显示）=====
-  function generateStaticStars(score) {
+
+      // 生成静态星星
+  function generateStars(score) {
     let html = '';
-    const full = Math.floor(score);
-    const hasHalf = score - full >= 0.5;
-    for (let i = 1; i <= 5; i++) {
-      if (i <= full) {
-        html += '<i class="fas fa-star"></i>';
-      } else if (i === full + 1 && hasHalf) {
-        html += '<i class="fas fa-star-half-alt"></i>';
-      } else {
-        html += '<i class="far fa-star"></i>';
-      }
+    const full = Math.floor(score || 0);
+    const half = (score || 0) - full >= 0.5;
+    for (let i = 0; i < 5; i++) {
+      if (i < full) html += '<i class="fas fa-star"></i>';
+      else if (i === full && half) html += '<i class="fas fa-star-half-alt"></i>';
+      else html += '<i class="far fa-star"></i>';
     }
     return html;
   }
 
-  // ===== 新增：生成可交互星星（用户打分）=====
+  // ===== 生成可交互星星（用户打分）=====
   function generateInteractiveStars(userScore) {
     let html = '';
     for (let i = 1; i <= 5; i++) {
@@ -142,37 +181,36 @@ function createContentElement(content) {
 
   item.innerHTML = `
     <div class="content-header">
-      <img src="${content.avatar || '../../common/images/avatar-default.png'}" alt="头像" class="clickable-avatar" data-userid="${content.userId}">
+      <img src="${content.avatar || '../../common/images/test.png'}" alt="头像" class="clickable-avatar" data-userid="${content.userId}">
       <div class="user-meta">
         <h3 class="username clickable-avatar" data-userid="${content.userId}">${content.nickname || content.username}</h3>
         <p class="post-time">${formatTime(content.createTime)}</p>
       </div>
-      ${actionsHtml}
+      <div class="rating">
+        <span class="score" id="score-${content.id}">${(content.avgRating || 0).toFixed(1)}</span>
+         <div class="stars">${generateStars(content.avgRating || 0)}</div>
+      </div>
     </div>
     <div class="content-body">
-      <p class="content-text">${content.text || ''}</p>
-      ${mediaHtml}
-      <div class="tags">
-        ${content.tags?.map(tag => `<span class="tag">${tag}</span>`).join('') || ''}
-      </div>
-    </div>
+          <h3 class="content-title" style="margin-bottom: 0.8rem; font-size: 1.2rem; font-weight: 600; color: #1e293b;">
+        ${content.title || ''}
+      </h3>
 
-    <!-- ===== 内容底部：平均分 + 评论按钮 ===== -->
+     <!-- 新增：标签显示 -->
+    ${Array.isArray(content.tags) && content.tags.length > 0 ? `
+      <div class="content-tags">
+        ${content.tags.map(tag => `<span class="content-tag">#${tag.trim()}</span>`).join('')}
+      </div>
+    ` : ''}
+
+    ${content.description ? `<p class="content-text">${content.description}</p>` : ''}
+    ${mediaHtml}
+    </div>
+  </div>
+
+    <!-- ===== 内容底部：评论按钮 ===== -->
     <div class="content-footer">
-      <div class="rating">
-        <span class="score" id="score-${content.id}">${(content.score || 0).toFixed(1)}</span>
-        <div class="stars" id="stars-${content.id}">
-          ${generateStaticStars(content.score || 0)}
-        </div>
-      </div>
-      <div class="interaction">
-        <button class="interact-btn comment-btn" data-id="${content.id}">
-          <i class="fas fa-comment"></i> 评论 (${content.commentCount || 0})
-        </button>
-      </div>
-    </div>
-
-    <!-- ===== 用户个人评分区域（仅登录用户显示） ===== -->
+    <!-- ===== 用户个人评分区域 ===== -->
     ${currentUser ? `
     <div class="user-rating" id="userRating-${content.id}">
       <span style="font-size:0.9rem;color:#64748b;margin-right:0.8rem;">你的评分：</span>
@@ -181,17 +219,22 @@ function createContentElement(content) {
       </div>
     </div>
     ` : ''}
-
-    <!-- ===== 评论区 ===== -->
-    <div class="comments-section" id="commentsSection-${content.id}" style="display:none;">
-      <div class="comments-list" id="commentsList-${content.id}"></div>
-      
-      <div class="comment-form" style="margin-top:1rem;display:flex;gap:0.5rem;align-items:start;">
-        <img src="${currentUser?.avatar || '../../common/images/test.png'}" style="width:40px;height:40px;border-radius:50%;flex-shrink:0;">
-        <textarea class="comment-textarea" placeholder="写下你的评论..." style="flex:1;padding:0.8rem;border:1px solid #e2e8f0;border-radius:12px;resize:none;height:80px;"></textarea>
-        <button class="submit-comment-btn" data-contentid="${content.id}" style="align-self:end;padding:0.8rem 1.2rem;background:#3b82f6;color:white;border:none;border-radius:12px;cursor:pointer;">发送</button>
+      <div class="interaction">
+        <button class="interact-btn comment-btn" data-id="${content.id}">
+          <i class="fas fa-comment"></i> 评论 (${content.viewCount || 0})
+        </button>
       </div>
     </div>
+
+   <!-- ===== 评论区 ===== -->
+<div class="comments-section" id="commentsSection-${content.id}" style="display:none;">
+  <div class="comments-list" id="commentsList-${content.id}"></div>
+  
+  <div class="comment-form" style="margin-top:1rem;display:flex;gap:0.5rem;align-items:start;padding-bottom:1rem;">
+    <img src="${currentUser?.avatar || '../../common/images/test.png'}" style="width:40px;height:40px;border-radius:50%;flex-shrink:0;">
+    <textarea class="comment-textarea" placeholder="写下你的评论..." style="flex:1;padding:0.8rem;border:1px solid #e2e8f0;border-radius:12px;resize:none;height:60px;"></textarea>
+<button class="submit-comment-btn" data-contentid="${content.id}" style="align-self:end;padding:0.8rem 1.2rem;margin-right:0.5rem;background:#3b82f6;color:white;border:none;border-radius:12px;cursor:pointer;">发送</button>  </div>
+</div>
   `;
 
   // ===== 头像点击跳转 =====
@@ -199,7 +242,7 @@ function createContentElement(content) {
     el.onclick = () => {
       const userId = el.dataset.userid;
       const url = userId == currentUser?.id ? 'current' : userId;
-      window.location.href = `../user-detail/user-detail.html?userId=${url}`;
+     window.location.href = `../user-detail/user-detail.html?userId=${url}`;
     };
   });
 
@@ -211,9 +254,9 @@ function createContentElement(content) {
         try {
           await axios.delete(`/api/content/${content.id}`);
           item.remove();
-          alert('删除成功');
+          showToast('删除成功');
         } catch (err) {
-          alert('删除失败：' + (err.response?.data?.message || '未知错误'));
+          showToast('删除失败：' + (err.response?.data?.message || '未知错误'));
         }
       }
     };
@@ -228,7 +271,7 @@ function createContentElement(content) {
         commentsSection.style.display = 'none';
       } else {
         commentsSection.style.display = 'block';
-        await loadComments(content.id);
+        await loadComments(content.id, commentsSection);
       }
     };
 
@@ -239,7 +282,7 @@ function createContentElement(content) {
       submitBtn.onclick = async () => {
         const text = textarea.value.trim();
         if (!text) {
-          alert('评论内容不能为空');
+          showToast('评论内容不能为空');
           return;
         }
         try {
@@ -249,11 +292,11 @@ function createContentElement(content) {
             parentId: null
           });
           textarea.value = '';
-          await loadComments(content.id);
-          commentBtn.innerHTML = `<i class="fas fa-comment"></i> 评论 (${(content.commentCount || 0) + 1})`;
-          content.commentCount = (content.commentCount || 0) + 1;
+          await loadComments(content.id, commentsSection);
+          commentBtn.innerHTML = `<i class="fas fa-comment"></i> 评论 (${(content.viewCount || 0) + 1})`;
+          content.commentCount = (content.viewCount || 0) + 1;
         } catch (err) {
-          alert('评论失败：' + (err.response?.data?.message || '未知错误'));
+          showToast('评论失败：' + (err.response?.data?.message || '未知错误'));
         }
       };
     }
@@ -290,19 +333,18 @@ function createContentElement(content) {
             score: score
           });
           starsContainer.innerHTML = generateInteractiveStars(score);
-          alert('感谢你的评分！');
+          showToast('感谢你的评分！');
 
-          // 更新平均分（简单方式：重新获取内容详情）
+          // 更新平均分（重新获取内容详情）
           try {
-            const res = await axios.get(`/api/rating/user/${contentId}`);
-            if (res.data.code === 200) {
-              const newScore = res.data.data.score || 0;
-              document.getElementById(`score-${content.id}`).textContent = newScore.toFixed(1);
-              document.getElementById(`stars-${content.id}`).innerHTML = generateStaticStars(newScore);
-            }
+            const detailRes = await axios.get(`/api/content/${content.id}`);
+          if (detailRes.data.code === 200) {
+            const newAvgRating = detailRes.data.data.avgRating || 0;
+            document.getElementById(`score-${content.id}`).textContent = newAvgRating.toFixed(1);
+          }
           } catch (err) {}
         } catch (err) {
-          alert('打分失败：' + (err.response?.data?.message || '未知错误'));
+          showToast('打分失败：' + (err.response?.data?.message || '未知错误'));
         }
       }
     };
@@ -324,41 +366,40 @@ function createContentElement(content) {
   return item;
 }
 
-// 加载评论
-async function loadComments(contentId) {
-  const listEl = document.getElementById(`commentsList-${contentId}`);
-  if (!listEl) return;
-
+// 加载评论函数（接收 contentId 和目标容器）
+async function loadComments(contentId, container) {
   try {
-    const res = await axios.get(`/api/comment/${contentId}`);
+    const res = await axios.get(`/api/comment/${contentId}`); 
+
     if (res.data.code === 200) {
-      listEl.innerHTML = '';
       const comments = res.data.data || [];
+      const commentsList = container.querySelector('.comments-list');
+      commentsList.innerHTML = ''; // 清空
 
       if (comments.length === 0) {
-        listEl.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:1rem;">暂无评论，快来抢沙发~</p>';
+        commentsList.innerHTML = '<div style="text-align:center; padding:1rem; color:#64748b;">暂无评论</div>';
         return;
       }
 
-      comments.forEach(c => {
+      comments.forEach(comment => {
         const commentEl = document.createElement('div');
-        commentEl.style = 'display:flex;gap:1rem;padding:0.8rem 0;border-bottom:1px solid #f1f5f9;';
+        commentEl.className = 'comment-item';
         commentEl.innerHTML = `
-          <img src="${c.avatar || '../../common/images/avatar-default.png'}" style="width:36px;height:36px;border-radius:50%;">
-          <div style="flex:1;">
-            <div style="font-weight:600;font-size:0.95rem;">${c.nickname || c.username}</div>
-            <div style="color:#64748b;font-size:0.9rem;margin:0.3rem 0;">${formatTime(c.createTime)}</div>
-            <div>${c.text}</div>
+          <img src="${comment.avatar || '../../common/images/test.png'}" alt="头像">
+          <div class="comment-info">
+            <strong>${comment.nickname || comment.username}</strong>
+            <p>${comment.content || comment.text}</p>
+            <span class="comment-time">${formatTime(comment.createTime)}</span>
           </div>
         `;
-        listEl.appendChild(commentEl);
+        commentsList.appendChild(commentEl);
       });
     }
   } catch (err) {
-    listEl.innerHTML = '<p style="color:#ef4444;text-align:center;">加载评论失败</p>';
+    console.error('加载评论失败', err);
+    container.querySelector('.comments-list').innerHTML = 
+      '<div style="text-align:center; padding:1rem; color:#ef4444;">加载评论失败</div>';
   }
-
-  return item;
 }
 
 function generateStars(score) {
@@ -385,80 +426,333 @@ function formatTime(timeStr) {
 
 // 发布内容（支持多图上传）
 async function handlePostSubmit() {
-  const titleInput = document.getElementById('postTitle');
-  const textarea = document.querySelector('.post-modal textarea');
-  const tagInput = document.getElementById('postTags');
+  const postTitleInput = document.getElementById('postTitle');
+  const postTextInput = document.getElementById('postText');
+  const postTagsInput = document.getElementById('postTags');
+  const uploadImageInput = document.getElementById('uploadImage');
+  const uploadVideoInput = document.getElementById('uploadVideo');
+  const imagePreview = document.getElementById('imagePreview');
+  const submitBtn = document.getElementById('submitPost');
 
-  const title = titleInput.value.trim();
-  const description = textarea.value.trim();
-  const tags = tagInput.value.split(',').map(t => t.trim()).filter(Boolean);
+  const title = postTitleInput.value.trim();
+  const description = postTextInput.value.trim();
+  const tagsStr = postTagsInput.value.trim();
 
-  // 校验：标题必填
   if (!title) {
-    alert('请填写标题！');
-    titleInput.focus();
+    showToast('标题不能为空！');
     return;
   }
 
-  if (selectedFiles.length === 0 && !description) {
-    alert('请填写内容或上传图片/视频！');
-    textarea.focus();
-    return;
-  }
+  // 处理标签
+  const tags = tagsStr
+    ? tagsStr.split(',').map(t => t.trim()).filter(t => t.length > 0)
+    : [];
 
-  const formData = new FormData();
-  formData.append('title', title);                    // 必填
-  formData.append('description', description); 
-  formData.append('type', selectedFiles.length > 0 
-    ? (selectedFiles[0].type.startsWith('video') ? 'VIDEO' : 'IMAGE') 
-    : 'TEXT');
-  
-  tags.forEach(tag => formData.append('tags', tag));
-  selectedFiles.forEach(file => formData.append('files', file));
+  // 获取选择的文件（图片多选取第一张，视频单选）
+  const imageFile = uploadImageInput.files[0] || null;
+  const videoFile = uploadVideoInput.files[0] || null;
+
+  // 判断内容类型
+  let type = 'TEXT';
+  let fileToUpload = null;
+
+  if (videoFile) {
+    type = 'VIDEO';
+    fileToUpload = videoFile;
+  } else if (imageFile) {
+    type = 'IMAGE';
+    fileToUpload = imageFile;
+  }
 
   try {
-    const res = await axios.post('/api/content', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+    submitBtn.disabled = true;
+    submitBtn.textContent = '发布中...';
+
+    let fileUrl = null;
+    let thumbnailUrl = null;
+
+    // 如果有媒体文件，先上传获取路径
+    if (fileToUpload) {
+      const uploadRes = await uploadSingleFile(fileToUpload);
+      fileUrl = uploadRes.fileUrl;         
+      thumbnailUrl = uploadRes.thumbnailUrl || null;  // 如果有缩略图（视频可能有）
+    }
+
+    // 构造符合后端要求的 JSON
+    const payload = {
+      title: title,
+      description: description || null,
+      type: type,
+      fileUrl: fileUrl,          // 单个字符串或 null
+      thumbnailUrl: thumbnailUrl, // 可选，视频时可能需要
+      tags: tags                 // 数组，如 ["旅行", "美食"]
+    };
+
+    // 发送纯 JSON 请求
+    const res = await axios.post('/api/content', payload, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
     if (res.data.code === 200) {
-      alert('发布成功！');
-      closePostModal();
-      loadContentList(true); // 刷新列表
+      showToast('发布成功！');
+      document.getElementById('postModal').classList.remove('show');
+      clearPostForm();
+      loadContentList(true);  // 刷新列表
+    } else {
+      showToast('发布失败：' + (res.data.message || '未知错误'));
     }
   } catch (err) {
     console.error('发布失败', err);
-    alert('发布失败：' + (err.response?.data?.message || '未知错误'));
+    showToast('操作失败：' + (err.response?.data?.message || err.message || '网络错误'));
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '发布';
+  }
+
+  // 清空表单
+  function clearPostForm() {
+    postTitleInput.value = '';
+    postTextInput.value = '';
+    postTagsInput.value = '';
+    uploadImageInput.value = '';
+    uploadVideoInput.value = '';
+    imagePreview.innerHTML = '';
+  }
+}
+
+// 独立的文件上传函数
+async function uploadSingleFile(file) {
+  const formData = new FormData();
+  formData.append('file', file);  // 后端参数名根据实际情况调整
+
+  const res = await axios.post('/api/content', formData);  
+  if (res.data.code === 200) {
+    return {
+      fileUrl: res.data.data?.fileUrl || res.data.fileUrl,
+      thumbnailUrl: res.data.data?.thumbnailUrl || res.data.thumbnailUrl || null
+    };
+  } else {
+    throw new Error(res.data.message || '文件上传失败');
   }
 }
 
 let selectedFiles = [];
 
-function initFilters() {
-  // 类型筛选（全部/图片/视频/文字）
-  document.querySelectorAll('.filter-tabs .tab').forEach(tab => {
-    tab.onclick = () => {
-      document.querySelectorAll('.filter-tabs .tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      
-      currentFilterType = tab.dataset.filter; // 'all', 'IMAGE', 'VIDEO', 'TEXT'
-      loadContentList(true);
-    };
-  });
 
-  // 排序下拉框
-  document.getElementById('sortSelect').onchange = (e) => {
-    currentSort = e.target.value; // 'latest', 'oldest', 'popular'
-    loadContentList(true);
-  };
-}
 
 let currentFilterType = 'all'; // 默认全部
 let currentSort = 'latest';     // 默认最新
 
 // 初始化交互
 function initInteractions() {
-  initFilters();
+
+  // ==================== 通知铃铛悬停下拉 ====================
+async function initNotificationDropdown() {
+  const notificationBtn = document.getElementById('notificationBtn');
+  const dropdown = document.getElementById('notificationDropdown');
+  const badge = document.getElementById('requestCountBadge');
+  const list = document.getElementById('notificationList');
+
+  if (!notificationBtn || !dropdown) return;
+
+  let timeout;
+
+  // 鼠标进入按钮：延迟显示（避免误触）
+  notificationBtn.addEventListener('mouseenter', async () => {
+    clearTimeout(timeout);
+    dropdown.classList.add('show');
+    await loadPendingRequestsForDropdown();
+  });
+
+  // 鼠标进入下拉面板：保持显示
+  dropdown.addEventListener('mouseenter', () => {
+    clearTimeout(timeout);
+  });
+
+  // 鼠标离开（按钮或面板）：延迟隐藏
+  notificationBtn.addEventListener('mouseleave', () => {
+    timeout = setTimeout(() => {
+      dropdown.classList.remove('show');
+    }, 300);
+  });
+
+  dropdown.addEventListener('mouseleave', () => {
+    timeout = setTimeout(() => {
+      dropdown.classList.remove('show');
+    }, 300);
+  });
+
+  // 加载好友请求到下拉面板
+  async function loadPendingRequestsForDropdown() {
+    try {
+      const res = await axios.get('/api/friend/pending');
+      if (res.data.code === 200) {
+        const requests = res.data.data || [];
+        badge.textContent = requests.length;
+
+        if (requests.length === 0) {
+          list.innerHTML = `
+            <div class="no-requests" style="text-align:center; padding:1.5rem; color:#64748b;">
+              暂无好友请求
+            </div>`;
+          return;
+        }
+
+        list.innerHTML = '';
+        requests.forEach(req => {
+          const item = document.createElement('div');
+          item.className = 'notification-item';
+          item.innerHTML = `
+            <img src="${req.avatar || '../../common/images/test.png'}" alt="头像">
+            <div class="info">
+              <strong>${req.nickname || req.username}</strong>
+              <small>请求添加你为好友</small>
+            </div>
+            <div class="actions">
+              <button class="accept" onclick="handleFriendAction('accept', ${req.id}); this.closest('.notification-item').remove(); updateBadge();">
+                接受
+              </button>
+              <button class="reject" onclick="handleFriendAction('reject', ${req.id}); this.closest('.notification-item').remove(); updateBadge();">
+                拒绝
+              </button>
+            </div>
+          `;
+          list.appendChild(item);
+        });
+      }
+    } catch (err) {
+      list.innerHTML = '<div style="text-align:center; padding:1rem; color:#ef4444;">加载失败</div>';
+    }
+  }
+
+  // 更新徽标数字（操作后）
+  window.updateBadge = async () => {
+    try {
+      const res = await axios.get('/api/friend/pending');
+      const count = res.data.data?.length || 0;
+      badge.textContent = count;
+      // 同时更新侧边栏的计数（如果打开了）
+      const sidebarCount = document.querySelector('.request-count');
+      if (sidebarCount) sidebarCount.textContent = `(${count})`;
+    } catch (err) {}
+  };
+
+  // 页面加载时也更新一次徽标（红点）
+  updateBadge();
+}
+
+// 在 initInteractions() 中调用
+initNotificationDropdown();
+
+// ==================== 新增：筛选按钮弹出模态框 ====================
+function initFilterModal() {
+  const filterBtn = document.getElementById('filterBtn');
+  const modal = document.getElementById('filterModal');
+  const overlay = document.getElementById('filterOverlay');
+  const closeBtn = document.getElementById('closeFilterModal');
+  const cancelBtn = document.getElementById('cancelFilterBtn');
+  const applyBtn = document.getElementById('applyFilterBtn');
+
+  if (!filterBtn || !modal) return;
+
+  // 点击筛选按钮打开模态框，并同步当前筛选状态
+  filterBtn.onclick = () => {
+    // 同步类型tab
+    document.querySelectorAll('#filterModal .filter-tabs .tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.filter === currentFilterType);
+    });
+    // 同步排序
+    document.getElementById('sortSelect').value = currentSort;
+
+    modal.classList.add('show');
+  };
+
+  // 关闭方式
+  [closeBtn, overlay, cancelBtn].forEach(el => {
+    if (el) {
+      el.onclick = () => modal.classList.remove('show');
+    }
+  });
+
+  // 模态框内类型tab切换（只切换active，不立即加载）
+  document.querySelectorAll('#filterModal .filter-tabs .tab').forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll('#filterModal .filter-tabs .tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+    };
+  });
+
+  // 应用筛选
+  applyBtn.onclick = () => {
+    const activeTab = document.querySelector('#filterModal .filter-tabs .tab.active');
+    currentFilterType = activeTab ? activeTab.dataset.filter : 'all';
+    currentSort = document.getElementById('sortSelect').value;
+
+    modal.classList.remove('show');
+    loadContentList(true); // 刷新内容列表
+  };
+}
+
+
+initFilterModal();
+
+// ==================== 用户头像下拉菜单 ====================
+function initUserDropdown() {
+  const userMenuBtn = document.getElementById('userMenuBtn');
+  const dropdownMenu = document.getElementById('dropdownMenu');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  if (!userMenuBtn || !dropdownMenu) return;
+
+  let timeout;
+
+  // 鼠标进入头像按钮：延迟显示下拉
+  userMenuBtn.addEventListener('mouseenter', () => {
+    clearTimeout(timeout);
+    dropdownMenu.classList.add('show');
+  });
+
+  // 鼠标进入下拉菜单：保持显示
+  dropdownMenu.addEventListener('mouseenter', () => {
+    clearTimeout(timeout);
+  });
+
+  // 鼠标离开：延迟隐藏
+  userMenuBtn.addEventListener('mouseleave', () => {
+    timeout = setTimeout(() => {
+      dropdownMenu.classList.remove('show');
+    }, 300);
+  });
+
+  dropdownMenu.addEventListener('mouseleave', () => {
+    timeout = setTimeout(() => {
+      dropdownMenu.classList.remove('show');
+    }, 300);
+  });
+
+  // 点击退出登录
+  logoutBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (confirm('确定要退出登录吗？')) {
+      localStorage.removeItem('token');
+      localStorage.clear(); // 可选：清空所有本地数据
+      window.location.href = '../login/login.html';
+    }
+  });
+
+  // 点击页面其他区域也关闭（可选增强）
+  document.addEventListener('click', (e) => {
+    if (!userMenuBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+      dropdownMenu.classList.remove('show');
+    }
+  });
+}
+
+
+initUserDropdown();
+  
   // 发布模态框
   document.getElementById('createPostBtn').onclick = () => {
     document.getElementById('postModal').classList.add('show');
@@ -503,9 +797,6 @@ function initInteractions() {
 
   document.getElementById('submitPost').onclick = handlePostSubmit;
 
-  // 加载更多
-  document.getElementById('loadMoreBtn').onclick = () => loadContentList();
-
   // 好友侧边栏
   initFriendsSidebar();
 }
@@ -514,6 +805,14 @@ function initInteractions() {
 async function initFriendsSidebar() {
   const sidebar = document.getElementById('friendsSidebar');
   const overlay = document.getElementById('sidebarOverlay');
+
+  // ==================== 折叠面板交互 ====================
+document.querySelectorAll('.accordion-header').forEach(header => {
+  header.addEventListener('click', () => {
+    const section = header.parentElement;
+    section.classList.toggle('active');
+  });
+});
 
   document.getElementById('friendsBtn').onclick = async () => {
     sidebar.classList.add('show');
@@ -620,7 +919,7 @@ function renderFriendsList(friends) {
     const item = document.createElement('div');
     item.className = 'user-item';
     item.innerHTML = `
-      <img src="${friend.avatar || '../../common/images/avatar-default.png'}">
+      <img src="${friend.avatar || '../../common/images/test.png'}">
       <div class="info">
         <h4>${friend.nickname || friend.username}</h4>
         <p>已添加</p>
@@ -636,20 +935,20 @@ window.handleFriendAction = async (action, friendId) => {
   try {
     const url = action === 'accept' ? `/api/friend/accept/${friendId}` : `/api/friend/reject/${friendId}`;
     await axios.post(url);
-    alert(action === 'accept' ? '已添加好友' : '已拒绝');
+    ashowToast(action === 'accept' ? '已添加好友' : '已拒绝');
     loadFriendRequests();
     loadFriendsList();
   } catch (err) {
-    alert('操作失败');
+    showToast('操作失败');
   }
 };
 
-window.addFriend = async (friendId) => {
+window.addFriend = async (username) => {
   try {
-    await axios.post('/api/friend', { friendId });
-    alert('好友请求已发送');
+    await axios.post('/api/friend', { username });
+    showToast('好友请求已发送');
   } catch (err) {
-    alert('发送失败：' + (err.response?.data?.message || ''));
+    ashowToast('发送失败：' + (err.response?.data?.message || ''));
   }
 };
 
@@ -678,7 +977,6 @@ function initTopSearch() {
     // 清空当前列表，准备显示搜索结果
     const contentList = document.getElementById('contentList');
     contentList.innerHTML = '';
-    document.getElementById('loadMoreBtn').style.display = 'none';
     hasMore = false; // 搜索结果不启用“加载更多”
 
     if (!keyword) {
@@ -688,7 +986,7 @@ function initTopSearch() {
     }
 
     try {
-      // 调用按标签搜索接口（支持单个标签）
+      // 调用按标签搜索接口
       const res = await axios.get('/api/content/tags', {
         params: {
           tags: keyword,   // 后端支持 ?tags=xxx
@@ -731,10 +1029,39 @@ function initTopSearch() {
           <p>搜索失败，请检查网络后重试</p>
         </div>
       `;
-      // 可选：出错后恢复默认列表
+      // 出错后恢复默认列表
       // loadContentList(true);
     }
   };
+
+  // ==================== Toast 弹窗提示函数 ====================
+
+function showToast(message, type = 'success', duration = 3000) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+
+  const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+
+  toast.innerHTML = `
+    <i class="fas ${icon} toast-icon"></i>
+    <div class="toast-message">${message} </div>
+    <button class="close-toast" onclick="this.parentElement.remove()">&times;</button>
+  `;
+
+  container.appendChild(toast);
+
+  // 触发显示动画
+  setTimeout(() => toast.classList.add('show'), 100);
+
+  // 自动消失
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
+  }, duration);
+}
 
   // 绑定事件
   searchBtn.onclick = performTagSearch;

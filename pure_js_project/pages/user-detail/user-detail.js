@@ -43,7 +43,7 @@ async function fetchTargetUser(userIdParam) {
 
 // 获取用户内容列表（分页）
 async function fetchUserPosts(userId, page = 1, size = 20) {
-  const res = await axios.get(`/api/content/user/${userId}`, {
+  const res = await axios.get(`/api/content/user`, {
     params: { page, size }
   });
   if (res.data.code === 200) {
@@ -53,11 +53,11 @@ async function fetchUserPosts(userId, page = 1, size = 20) {
 }
 
 function renderProfile(user, posts, isCurrentUser) {
-  document.getElementById('profileAvatar').src = user.avatar || '../../common/images/avatar-default.png';
+  document.getElementById('profileAvatar').src = user.avatar || '../../common/images/test.png';
   document.getElementById('profileUsername').textContent = user.nickname || user.username;
   document.getElementById('profileBio').textContent = user.bio || '这家伙很懒，什么都没写～';
   document.getElementById('postCount').textContent = posts.length;
-  // 粉丝/关注数（接口未明确，暂用模拟或后端返回）
+  // 粉丝/关注数
   document.getElementById('followerCount').textContent = user.followers || 0;
   document.getElementById('followingCount').textContent = user.following || 0;
 
@@ -91,6 +91,10 @@ function renderProfile(user, posts, isCurrentUser) {
 function createContentElement(post) {
   const item = document.createElement('div');
   item.className = 'content-item';
+  item.dataset.id = post.id;
+
+  // 当前查看的用户是否是内容发布者（用于以后扩展编辑/删除按钮，目前用户主页不需要）
+  // const isOwn = currentUserId && post.userId === currentUserId;
 
   let mediaHtml = '';
   if (post.type === 'IMAGE' && post.mediaUrls?.length) {
@@ -103,30 +107,123 @@ function createContentElement(post) {
     </div>`;
   }
 
+  // 生成静态星星
+  function generateStars(score) {
+    let html = '';
+    const full = Math.floor(score || 0);
+    const half = (score || 0) - full >= 0.5;
+    for (let i = 0; i < 5; i++) {
+      if (i < full) html += '<i class="fas fa-star"></i>';
+      else if (i === full && half) html += '<i class="fas fa-star-half-alt"></i>';
+      else html += '<i class="far fa-star"></i>';
+    }
+    return html;
+  }
+
+  // 生成可交互的个人评分星星
+  function generateInteractiveStars(userScore = 0) {
+    let html = '';
+    for (let i = 1; i <= 5; i++) {
+      if (i <= userScore) {
+        html += `<i class="fas fa-star rated" data-score="${i}"></i>`;
+      } else {
+        html += `<i class="far fa-star" data-score="${i}"></i>`;
+      }
+    }
+    return html;
+  }
+
+  // 平均分
+  const avgScore = (post.avgRating || 0).toFixed(1);
+
   item.innerHTML = `
     <div class="content-header">
-      <img src="${post.avatar || '../../common/images/avatar-default.png'}" alt="头像">
+      <img src="${post.avatar || '../../common/images/avatar-default.png'}" alt="头像" class="clickable-avatar" data-userid="${post.userId}">
       <div class="user-meta">
-        <h3 class="username">${post.nickname || post.username}</h3>
+        <h3 class="username clickable-avatar" data-userid="${post.userId}">${post.nickname || post.username}</h3>
         <p class="post-time">${formatTime(post.createTime)}</p>
       </div>
+      <div class="rating">
+        <span class="score" id="score-${post.id}">${avgScore}</span>
+        <div class="stars">${generateStars(post.score || post.avgRating || 0)}</div>
+      </div>
     </div>
+
     <div class="content-body">
-      <p class="content-text">${post.text || ''}</p>
+      ${post.title ? `<h3 class="content-title">${post.title}</h3>` : ''}
+
+      ${Array.isArray(post.tags) && post.tags.length > 0 ? `
+        <div class="content-tags">
+          ${post.tags.map(tag => `<span class="content-tag">#${tag.trim()}</span>`).join('')}
+        </div>
+      ` : ''}
+
+      <p class="content-text">${post.text || post.description || ''}</p>
       ${mediaHtml}
     </div>
+
     <div class="content-footer">
-      <div class="rating">
-        <span class="score">${post.score || '0.0'}</span>
-        <div class="stars">${generateStars(post.score || 0)}</div>
+      <div class="user-rating" id="userRating-${post.id}">
+        <span>你的评分：</span>
+        <div class="rating-stars interactive" data-contentid="${post.id}">
+          ${generateInteractiveStars(post.userScore || 0)}
+        </div>
       </div>
       <div class="interaction">
-        <button class="interact-btn comment-btn">
+        <button class="interact-btn comment-btn" data-id="${post.id}">
           <i class="fas fa-comment"></i> 评论 (${post.commentCount || 0})
         </button>
       </div>
     </div>
+
+    <!-- 评论区-->
+    <div class="comments-section" id="commentsSection-${post.id}" style="display:none;">
+      <div class="comments-list" id="commentsList-${post.id}"></div>
+      <div class="comment-form" style="margin-top:1rem;display:flex;gap:0.5rem;align-items:start;">
+        <img src="${localStorage.getItem('avatar') || '../../common/images/test.png'}" style="width:40px;height:40px;border-radius:50%;flex-shrink:0;">
+        <textarea class="comment-textarea" placeholder="写下你的评论..." style="flex:1;padding:0.8rem;border:1px solid #e2e8f0;border-radius:12px;resize:none;height:80px;"></textarea>
+        <button class="submit-comment-btn" data-contentid="${post.id}" style="align-self:end;padding:0.8rem 1.2rem;background:#3b82f6;color:white;border:none;border-radius:12px;cursor:pointer;">发送</button>
+      </div>
+    </div>
   `;
+
+  // 头像/用户名点击跳转到对应用户主页
+  item.querySelectorAll('.clickable-avatar').forEach(el => {
+    el.onclick = () => {
+      const userId = el.dataset.userid;
+      // 如果是当前查看的用户，跳转到自己的主页（current），否则带上具体ID
+      const targetId = userId == currentUserId ? 'current' : userId;
+      window.location.href = `user-detail.html?userId=${targetId}`;
+    };
+  });
+
+  // 可选：如果后续要在用户主页也支持点击星星打分，可以在这里添加事件（与 home.js 一致）
+  // 示例代码（需后端接口支持）：
+  /*
+  item.querySelectorAll('.rating-stars.interactive i').forEach(star => {
+    star.onclick = async () => {
+      const score = parseInt(star.dataset.score);
+      const contentId = star.parentElement.dataset.contentid;
+      try {
+        await axios.post(`/api/content/${contentId}/rate`, { score });
+        // 成功后可刷新平均分等（需后端返回最新数据）
+        showToast('评分成功', 'success');
+      } catch (err) {
+        showToast('评分失败', 'error');
+      }
+    };
+  });
+  */
+
+  // 可选：评论按钮点击展开评论区（与首页一致）
+  const commentBtn = item.querySelector('.comment-btn');
+  if (commentBtn) {
+    commentBtn.onclick = () => {
+      const section = item.querySelector('.comments-section');
+      section.style.display = section.style.display === 'none' ? 'block' : 'none';
+    };
+  }
+
   return item;
 }
 
@@ -151,7 +248,7 @@ function formatTime(timeStr) {
   return date.toLocaleString();
 }
 
-// 编辑资料功能（完整对接）
+// 编辑资料功能
 function initEditProfile(currentUserData) {
   const modal = document.getElementById('editModal');
   const editBtn = document.querySelector('.edit-profile-btn');
@@ -201,7 +298,7 @@ function initEditProfile(currentUserData) {
     document.getElementById('newAvatarInput').value = '';
   };
 
-  // 保存资料（真实接口）
+  // 保存资料（
   document.getElementById('saveProfile').onclick = async () => {
     const newUsername = document.getElementById('editUsername').value.trim();
     const newBio = document.getElementById('editBio').value.trim();
@@ -219,7 +316,7 @@ function initEditProfile(currentUserData) {
         const formData = new FormData();
         formData.append('avatar', tempAvatarFile);
 
-        const uploadRes = await axios.post('/api/user/avatar', formData, {
+        const uploadRes = await axios.put ('/api/user/info', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
 
@@ -232,7 +329,7 @@ function initEditProfile(currentUserData) {
       }
 
       // 更新资料
-      const updateRes = await axios.put('/api/user/profile', {
+      const updateRes = await axios.put('/api/user/info', {
         nickname: newUsername,
         bio: newBio,
         avatar: newAvatarUrl

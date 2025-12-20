@@ -1,5 +1,3 @@
-/* user-detail.css */
-
 body {
   background-color: #f8fafc;
   padding-top: 70px;
@@ -142,7 +140,7 @@ body {
   color: #64748b;
 }
 
-/* 内容列表（复用首页 content-item 样式，建议在 common.css 中定义） */
+/* 内容列表 */
 .profile-content-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
@@ -349,4 +347,254 @@ body {
   .profile-content-list {
     grid-template-columns: 1fr;
   }
+}
+
+/* 内容卡片 - 与首页完全一致 */
+.content-item {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.content-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+}
+
+.content-header {
+  padding: 1.2rem 1.5rem 0.5rem;
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  min-height: 68px;
+}
+
+.content-header .rating {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.content-header img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+
+.user-meta h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.user-meta p {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.content-body {
+  padding: 1rem 1.5rem;
+}
+
+.content-text {
+  margin-bottom: 1rem;
+  font-size: 1.05rem;
+}
+
+/* 媒体容器 */
+.media-container img,
+.video-container video {
+  width: 100%;
+  border-radius: 12px;
+  max-height: 600px;
+  object-fit: cover;
+}
+
+.content-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rating .score {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #3b82f6;
+  margin-right: 0.5rem;
+}
+
+.stars i {
+  color: #fbbf24;
+  font-size: 1.1rem;
+}
+
+/* 额外支持首页新增的元素（如标题、标签、交互评分等） */
+.content-title {
+  margin-bottom: 0.8rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.content-tags {
+  margin-bottom: 1rem;
+}
+
+.content-tag {
+  display: inline-block;
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  margin-right: 0.5rem;
+}
+
+.user-rating {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.interactive i.rated {
+  color: #fbbf24;
+}
+
+.profile-content-list {
+  display: block; /* 改为块级，垂直堆叠 */
+}
+
+/* === 与首页完全同步的额外样式 === */
+
+/* 内容标题 */
+.content-title {
+  margin-bottom: 0.8rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* 标签样式 */
+.content-tags {
+  margin-bottom: 1rem;
+}
+
+.content-tag {
+  display: inline-block;
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  margin-right: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+/* 平均分右上角定位（关键！） */
+.content-header .rating {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rating .score {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #3b82f6;
+}
+
+/* 星星颜色 */
+.stars i {
+  color: #fbbf24;
+  font-size: 1.1rem;
+}
+
+/* 可交互星星 */
+.rating-stars.interactive i {
+  font-size: 1.4rem;
+  color: #fbbf24;
+  cursor: pointer;
+  transition: transform 0.2s;
+  margin-right: 4px;
+}
+
+.rating-stars.interactive i:hover {
+  transform: scale(1.2);
+}
+
+.rating-stars.interactive .rated {
+  color: #fbbf24;
+}
+
+/* 内容底部交互区 */
+.content-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+}
+
+/* 用户个人评分区域 */
+.user-rating {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.user-rating span {
+  margin-right: 0.8rem;
+}
+
+.rating-stars.interactive i {
+  cursor: pointer;
+  transition: color 0.2s;
+  font-size: 1.1rem;
+}
+
+.rating-stars.interactive i.rated {
+  color: #fbbf24;
+}
+
+.rating-stars.interactive i:hover {
+  color: #f59e0b;
+}
+
+/* 评论按钮样式统一 */
+.interaction .interact-btn {
+  padding: 0.6rem 1.2rem;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 999px;
+  color: #64748b;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.interaction .interact-btn:hover {
+  background: #e2e8f0;
+}
+
+/* 可点击头像指针 */
+.clickable-avatar {
+  cursor: pointer;
+}
+
+.clickable-avatar:hover {
+  opacity: 0.8;
 }
