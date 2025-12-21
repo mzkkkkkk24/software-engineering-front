@@ -148,8 +148,12 @@ async function loadContents() {
   tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;">加载中...</td></tr>';
 
   try {
-    const res = await axios.get('/api/admin/contents', {
-      params: { page: contentPage, size: pageSize, keyword }
+    const res = await axios.get('/api/admin/search', {
+      params: { 
+        keyword: keyword ,
+        page: contentPage, 
+        size: pageSize,
+  }
     });
 
     if (res.data.code === 200) {

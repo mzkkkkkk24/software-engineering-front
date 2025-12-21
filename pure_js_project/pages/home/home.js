@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   // 检查登录状态
   const token = localStorage.getItem('token');
   if (!token) {
-    window.location.href = '../../login/login.html';
+    window.location.href = '../login/login.html';
     return;
   }
 
@@ -196,7 +196,7 @@ function createContentElement(content) {
         ${content.title || ''}
       </h3>
 
-     <!-- 新增：标签显示 -->
+     <!-- 标签显示 -->
     ${Array.isArray(content.tags) && content.tags.length > 0 ? `
       <div class="content-tags">
         ${content.tags.map(tag => `<span class="content-tag">#${tag.trim()}</span>`).join('')}
@@ -543,7 +543,7 @@ let selectedFiles = [];
 
 
 let currentFilterType = 'all'; // 默认全部
-let currentSort = 'latest';     // 默认最新
+let currentSort = 0;     // 默认最新
 
 // 初始化交互
 function initInteractions() {
@@ -1037,7 +1037,7 @@ function initAnimatedBackground() {
   });
 }
 
-// ==================== 顶部搜索功能：仅按标签检索 ====================
+// ==================== 顶部搜索功能：内容检索 ====================
 
 function initTopSearch() {
   const searchInput = document.getElementById('searchInput');
@@ -1059,9 +1059,9 @@ function initTopSearch() {
 
     try {
       // 调用按标签搜索接口
-      const res = await axios.get('/api/content/tags', {
+      const res = await axios.get('/api/content/search', {
         params: {
-          tags: keyword,   // 后端支持 ?tags=xxx
+          keyword: keyword,   // 后端支持 keyword
           page: 1,
           size: 20         // 搜索结果一次加载较多，避免分页麻烦
         }
@@ -1085,17 +1085,17 @@ function initTopSearch() {
             <div style="text-align:center; padding:5rem 2rem; color:#94a3b8;">
               <i class="fas fa-search fa-3x" style="margin-bottom:1rem; opacity:0.6;"></i>
               <p style="font-size:1.1rem; margin-bottom:0.5rem;">
-                未找到包含标签 “<strong>${keyword}</strong>” 的内容
+                未找到包含 “<strong>${keyword}</strong>” 的内容
               </p>
               <p style="font-size:0.95rem; color:#64748b;">
-                试试其他标签，比如“旅行”、“美食”、“摄影”等～
+                试试其他内容，比如“旅行”、“美食”、“摄影”等～
               </p>
             </div>
           `;
         }
       }
     } catch (err) {
-      console.error('标签搜索失败', err);
+      console.error('搜索失败', err);
       contentList.innerHTML = `
         <div style="text-align:center; padding:4rem; color:#ef4444;">
           <p>搜索失败，请检查网络后重试</p>
@@ -1149,6 +1149,98 @@ function showToast(message, type = 'success', duration = 3000) {
     searchInput.select();
   });
 }
+
+// ==================== AI 聊天机器人逻辑 ====================
+
+const chatBotFab = document.getElementById('chatBotFab');
+const chatBotWindow = document.getElementById('chatBotWindow');
+const closeChatBot = document.getElementById('closeChatBot');
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const sendChatBtn = document.getElementById('sendChatBtn');
+
+// 打开/关闭窗口
+chatBotFab.onclick = () => {
+  chatBotWindow.classList.toggle('show');
+  if (chatBotWindow.classList.contains('show')) {
+    chatInput.focus();
+    // 清掉新消息红点
+    document.getElementById('chatNewMsgBadge').style.display = 'none';
+  }
+};
+
+closeChatBot.onclick = () => {
+  chatBotWindow.classList.remove('show');
+};
+
+// 发送消息函数
+async function sendMessage() {
+  const question = chatInput.value.trim();
+  if (!question) return;
+
+  // 添加用户消息
+  appendMessage(question, 'user');
+  chatInput.value = '';
+  chatInput.style.height = 'auto'; // 重置高度
+
+  // 添加正在思考的提示
+  const thinkingMsg = appendMessage('思考中...', 'bot');
+  sendChatBtn.disabled = true;
+
+  try {
+    const res = await axios.post('/api/chat/answer', {
+      question: question
+    });
+
+    // 移除“思考中”
+    thinkingMsg.remove();
+
+    if (res.data.code === 200) {
+      const answer = res.data.data || res.data.message || '（无回复）';
+      appendMessage(answer, 'bot');
+    } else {
+      appendMessage('抱歉，出错了：' + (res.data.message || '未知错误'), 'bot');
+    }
+  } catch (err) {
+    thinkingMsg.remove();
+    const errMsg = err.response?.data?.message || err.message || '网络错误';
+    appendMessage('请求失败：' + errMsg, 'bot');
+    console.error('AI聊天错误:', err);
+  } finally {
+    sendChatBtn.disabled = false;
+    chatInput.focus();
+  }
+
+  // 滚动到底部
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// 添加消息到聊天区
+function appendMessage(text, sender) {  // sender: 'user' 或 'bot'
+  const div = document.createElement('div');
+  div.className = `message ${sender}`;
+  div.innerHTML = text.replace(/\n/g, '<br>'); // 支持换行
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return div;
+}
+
+// 发送按钮点击
+sendChatBtn.onclick = sendMessage;
+
+// Enter 发送，Shift+Enter 换行
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+// 自适应 textarea 高度
+chatInput.addEventListener('input', () => {
+  chatInput.style.height = 'auto';
+  chatInput.style.height = chatInput.scrollHeight + 'px';
+});
 
 /*et dataDirectoryHandle; // 用户选择的文件夹句柄
 

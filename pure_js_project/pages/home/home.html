@@ -106,9 +106,8 @@
       <div style="margin-bottom: 1rem;">
         <label style="display:block; margin-bottom:0.5rem; font-weight:500; color:#374151;">排序方式</label>
         <select id="sortSelect" style="width:100%; padding:0.8rem 1rem; border:1px solid #e2e8f0; border-radius:12px; font-size:1rem;">
-          <option value="latest">最新发布</option>
-          <option value="oldest">最早发布</option>
-          <option value="popular">热门内容</option>
+          <option value= "0">最新发布</option>
+          <option value= "1">热门内容</option>
         </select>
       </div>
     </div>
@@ -274,6 +273,29 @@
 <div id="toastContainer" style="position:fixed; bottom:20px; right:20px; z-index:3000; display:flex; flex-direction:column; gap:12px;">
 </div>
 
+<div class="chat-bot-fab" id="chatBotFab">
+  <i class="fas fa-robot"></i>
+  <!-- 有新消息时显示小红点 -->
+  <span class="badge" id="chatNewMsgBadge" style="display:none;"></span>
+</div>
+
+<!-- 聊天窗口（默认隐藏） -->
+<div class="chat-bot-window" id="chatBotWindow">
+  <div class="chat-header">
+    <div class="chat-title">
+      <i class="fas fa-robot"></i>
+      <span>AI 助手</span>
+    </div>
+    <button class="close-btn" id="closeChatBot"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="chat-messages" id="chatMessages">
+    <div class="message bot">你好！我是你的 AI 助手，有什么可以帮你的吗？😊</div>
+  </div>
+  <div class="chat-input-area">
+    <textarea id="chatInput" placeholder="输入消息..."></textarea>
+    <button id="sendChatBtn"><i class="fas fa-paper-plane"></i></button>
+  </div>
+</div>
   <!-- 侧边栏遮罩 -->
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 

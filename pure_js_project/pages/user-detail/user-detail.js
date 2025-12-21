@@ -695,7 +695,7 @@ function initEditProfile(currentUserData) {
         const formData = new FormData();
         formData.append('avatar', tempAvatarFile);
 
-        const uploadRes = await axios.put ('/api/user/info', formData, {
+        const uploadRes = await axios.put ('/api/user/modify', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
 
@@ -708,7 +708,7 @@ function initEditProfile(currentUserData) {
       }
 
       // 更新资料
-      const updateRes = await axios.put('/api/user/info', {
+      const updateRes = await axios.put('/api/user/modify', {
         nickname: newUsername,
         bio: newBio,
         avatar: newAvatarUrl
