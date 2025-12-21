@@ -215,7 +215,7 @@ function createContentElement(content) {
     <div class="user-rating" id="userRating-${content.id}">
       <span style="font-size:0.9rem;color:#64748b;margin-right:0.8rem;">你的评分：</span>
       <div class="rating-stars interactive" data-contentid="${content.id}">
-        ${generateInteractiveStars(content.userScore || 0)}  <!-- 如果后端返回了 userScore 就用，没有就默认 0 -->
+        ${generateInteractiveStars(content.userScore || 0)}  <!-- 默认 0 -->
       </div>
     </div>
     ` : ''}
@@ -646,7 +646,7 @@ async function initNotificationDropdown() {
 // 在 initInteractions() 中调用
 initNotificationDropdown();
 
-// ==================== 新增：筛选按钮弹出模态框 ====================
+// ==================== 筛选按钮弹出模态框 ====================
 function initFilterModal() {
   const filterBtn = document.getElementById('filterBtn');
   const modal = document.getElementById('filterModal');
@@ -799,6 +799,78 @@ initUserDropdown();
 
   // 好友侧边栏
   initFriendsSidebar();
+
+  // ==================== 修改密码功能 ====================
+const changePasswordBtn = document.getElementById('changePasswordBtn');
+const changePasswordModal = document.getElementById('changePasswordModal');
+const closePasswordModal = document.getElementById('closePasswordModal');
+const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+const submitPasswordBtn = document.getElementById('submitPasswordBtn');
+
+if (changePasswordBtn) {
+  changePasswordBtn.onclick = () => {
+    changePasswordModal.classList.add('show');
+    document.getElementById('passwordForm').reset();
+  };
+}
+
+// 关闭模态框
+[closePasswordModal, cancelPasswordBtn, changePasswordModal.querySelector('.modal-overlay')].forEach(el => {
+  if (el) {
+    el.onclick = () => {
+      changePasswordModal.classList.remove('show');
+    };
+  }
+});
+
+// 提交修改密码
+if (submitPasswordBtn) {
+  submitPasswordBtn.onclick = async () => {
+    const oldPassword = document.getElementById('oldPassword').value.trim();
+    const newPassword = document.getElementById('newPassword').value.trim();
+    const confirmPassword = document.getElementById('confirmPassword').value.trim();
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      showToast('请填写完整信息', 'error');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      showToast('新密码至少6位', 'error');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      showToast('两次输入的新密码不一致', 'error');
+      return;
+    }
+
+    try {
+      const res = await axios.put('/api/user/password', {
+        oldPassword,
+        newPassword
+      });
+
+      if (res.data.code === 200) {
+        showToast('密码修改成功，请重新登录', 'success');
+        changePasswordModal.classList.remove('show');
+
+        // 3秒后自动退出登录
+        setTimeout(() => {
+          localStorage.clear();
+          window.location.href = '../login/login.html';
+        }, 2000);
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || '修改失败';
+      let displayMsg = msg;
+      if (msg.includes('旧密码错误') || msg.includes('incorrect')) {
+        displayMsg = '当前密码不正确';
+      }
+      showToast(displayMsg, 'error');
+    }
+  };
+}
 }
 
 // 好友侧边栏（完整对接）
@@ -1077,3 +1149,56 @@ function showToast(message, type = 'success', duration = 3000) {
     searchInput.select();
   });
 }
+
+/*et dataDirectoryHandle; // 用户选择的文件夹句柄
+
+// 让用户选择数据存储文件夹（只需一次）
+async function chooseDataFolder() {
+  try {
+    dataDirectoryHandle = await window.showDirectoryPicker();
+    localStorage.setItem('dataFolderChosen', 'true');
+    showToast('数据文件夹已选择，所有内容将保存到本地磁盘');
+  } catch (err) {
+    console.log('用户取消选择');
+  }
+}
+
+// 在页面加载时检查是否已选择文件夹
+if (!localStorage.getItem('dataFolderChosen')) {
+  setTimeout(() => {
+    if (confirm('首次使用需要选择一个本地文件夹来保存图片和视频，是否现在选择？')) {
+      chooseDataFolder();
+    }
+  }, 1000);
+}
+
+// 修改上传保存逻辑
+async function saveFileToLocal(file) {
+  if (!dataDirectoryHandle) {
+    showToast('请先选择数据存储文件夹', 'error');
+    return null;
+  }
+
+  const now = new Date();
+  const timestamp = now.toISOString().slice(0,19).replace(/[-:T]/g, '').slice(0,14);
+  const username = currentUser?.username || 'user';
+  const ext = file.name.split('.').pop();
+  const newFileName = `${username}_${timestamp}.${ext}`;
+
+  // 创建 user 子文件夹
+  let userDirHandle;
+  try {
+    userDirHandle = await dataDirectoryHandle.getDirectoryHandle(username, { create: true });
+  } catch {
+    userDirHandle = await dataDirectoryHandle.getDirectoryHandle(username, { create: true });
+  }
+
+  // 保存文件
+  const fileHandle = await userDirHandle.getFileHandle(newFileName, { create: true });
+  const writable = await fileHandle.createWritable();
+  await writable.write(file);
+  await writable.close();
+
+  // 返回本地相对路径（用于显示）
+  return `local://${username}/${newFileName}`;
+}*/

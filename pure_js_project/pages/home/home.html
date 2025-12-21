@@ -58,9 +58,9 @@
       <a href="../user-detail/user-detail.html?userId=current" class="dropdown-item">
         <i class="fas fa-user"></i> 个人中心
       </a>
-      <a href="../setting/setting.html" class="dropdown-item">
-        <i class="fas fa-cog"></i> 设置
-      </a>
+      <button class="dropdown-item" id="changePasswordBtn" style="width:100%; text-align:left; background:none; border:none; cursor:pointer;">
+        <i class="fas fa-key"></i> 修改密码
+      </button>
       <div class="dropdown-divider"></div>
       <a href="#" class="dropdown-item text-danger" id="logoutBtn">
         <i class="fas fa-sign-out-alt"></i> 退出登录
@@ -232,6 +232,40 @@
       <div class="friends-list" id="friendsList">
         <!-- 动态加载 -->
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- 修改密码模态框 -->
+<div class="modal post-modal" id="changePasswordModal">
+  <div class="modal-overlay"></div>
+  <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-header">
+      <h2>修改密码</h2>
+      <button class="close-btn" id="closePasswordModal"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="passwordForm">
+        <div style="margin-bottom: 1.2rem;">
+          <label style="display:block; margin-bottom:0.5rem; font-weight:500;">当前密码 <span style="color:#ef4444;">*</span></label>
+          <input type="password" id="oldPassword" placeholder="请输入当前密码" required
+                 style="width:100%; padding:0.8rem 1rem; border:1px solid #e2e8f0; border-radius:12px; font-size:1rem;">
+        </div>
+        <div style="margin-bottom: 1.2rem;">
+          <label style="display:block; margin-bottom:0.5rem; font-weight:500;">新密码 <span style="color:#ef4444;">*</span></label>
+          <input type="password" id="newPassword" placeholder="请输入新密码（至少6位）" required minlength="6"
+                 style="width:100%; padding:0.8rem 1rem; border:1px solid #e2e8f0; border-radius:12px; font-size:1rem;">
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display:block; margin-bottom:0.5rem; font-weight:500;">确认新密码 <span style="color:#ef4444;">*</span></label>
+          <input type="password" id="confirmPassword" placeholder="再次输入新密码" required
+                 style="width:100%; padding:0.8rem 1rem; border:1px solid #e2e8f0; border-radius:12px; font-size:1rem;">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="cancel-btn" id="cancelPasswordBtn">取消</button>
+      <button class="submit-btn" id="submitPasswordBtn">确认修改</button>
     </div>
   </div>
 </div>

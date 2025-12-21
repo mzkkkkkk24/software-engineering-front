@@ -37,7 +37,7 @@ body {
   height: 100%;
   max-width: 500px;
   max-height: 500px;
-  background-image: url('./images/login.png');
+  background-image: url('../../common/images/test.png');
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;

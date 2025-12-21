@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>欢迎来到 MediaShare</title>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- 公共样式 -->
+  <link rel="stylesheet" href="common/css/global.css">
+  <link rel="stylesheet" href="common/css/common.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+      color: #1f2937;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 原有动态光晕背景（保留底层氛围） */
+    .dynamic-bg {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    .dynamic-bg .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      animation: float-blob 25s infinite ease-in-out;
+      opacity: 0.6;
+    }
+
+    .dynamic-bg .blob:nth-child(1) {
+      width: 600px;
+      height: 600px;
+      left: -15%;
+      top: 10%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.5), transparent 70%);
+    }
+
+    .dynamic-bg .blob:nth-child(2) {
+      width: 800px;
+      height: 800px;
+      right: -20%;
+      bottom: -10%;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.45), transparent 70%);
+      animation-delay: 8s;
+    }
+
+    .dynamic-bg .blob:nth-child(3) {
+      width: 500px;
+      height: 500px;
+      left: 40%;
+      top: -15%;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.4), transparent 70%);
+      animation-delay: 15s;
+    }
+
+    @keyframes float-blob {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(120px, -100px) scale(1.15); }
+      50% { transform: translate(-80px, 120px) scale(0.9); }
+      75% { transform: translate(100px, 80px) scale(1.1); }
+    }
+
+    /* 新增：生活照片飘过层 */
+    #floatingPhotos {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none; /* 不阻挡点击 */
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .floating-photo {
+      position: absolute;
+      opacity: 0;
+      border-radius: 12px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+      animation: floatPhoto linear forwards;
+    }
+
+    @keyframes floatPhoto {
+      0% {
+        opacity: 0;
+        transform: translateY(100vh) rotate(0deg) scale(0.5);
+      }
+      10% {
+        opacity: 0.8;
+      }
+      90% {
+        opacity: 0.8;
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-100vh) rotate(30deg) scale(1);
+      }
+    }
+
+    .welcome-content {
+      text-align: center;
+      max-width: 800px;
+      padding: 2rem;
+      z-index: 1;
+      position: relative;
+    }
+
+    .brand-logo {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 2rem;
+      background-color: #1f2937;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 3rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    h1 {
+      font-size: 3.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      background: linear-gradient(90deg, #3b82f6, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    p.subtitle {
+      font-size: 1.3rem;
+      color: #475569;
+      margin-bottom: 3rem;
+      line-height: 1.6;
+    }
+
+    .enter-btn {
+      padding: 1rem 3rem;
+      background-color: #1f2937;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 25px rgba(31, 41, 55, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .enter-btn:hover {
+      background-color: #374151;
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(31, 41, 55, 0.4);
+    }
+
+    .enter-btn i {
+      font-size: 1.4rem;
+    }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 2.8rem; }
+      p.subtitle { font-size: 1.1rem; }
+      .brand-logo { width: 80px; height: 80px; font-size: 2.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 原有动态光晕背景 -->
+  <div class="dynamic-bg">
+    <div class="blob"></div>
+    <div class="blob"></div>
+    <div class="blob"></div>
+  </div>
+
+  <!-- 新增：生活照片飘过容器 -->
+  <div id="floatingPhotos"></div>
+
+  <div class="welcome-content">
+    <div class="brand-logo">
+      <i class="fas fa-compass"></i>
+    </div>
+    
+    <h1>MediaShare</h1>
+    <p class="subtitle">发现精彩，分享瞬间<br>一个属于你的媒体社交世界</p>
+    
+    <button class="enter-btn" onclick="window.location.href='login/login.html'">
+      <i class="fas fa-arrow-right"></i>
+      进入应用
+    </button>
+  </div>
+
+  <script>
+    // 生活照片URL数组（精选30张温暖高清生活照，涵盖家庭、朋友、旅行、美食、自然等）
+    const photoUrls = [
+      "https://www.shutterstock.com/image-photo/group-young-asian-man-woman-260nw-2498026863.jpg",
+      "https://www.shutterstock.com/image-photo/happy-multi-generational-people-having-260nw-2300610239.jpg",
+      "https://www.shutterstock.com/image-photo/family-visits-best-cropped-portrait-260nw-2294630363.jpg",
+      "https://www.shutterstock.com/image-photo/two-people-enjoying-playful-moment-260nw-2631172317.jpg",
+      "https://www.shutterstock.com/image-photo/outdoor-photo-thriving-50yearold-woman-260nw-2643501199.jpg",
+      "https://www.shutterstock.com/image-photo/latin-woman-enjoys-relaxing-morning-260nw-2659450533.jpg",
+      "https://www.shutterstock.com/image-photo/realistic-photograph-happy-latin-american-260nw-2678464727.jpg",
+      "https://www.parents.com/thmb/kHQxRYPCjJ7JJJnt4LG5llyyltA=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/Dunlap-Family_Fall_HA_Williamsburg-VA_November-2018_TheVacationChannel_CWF-188-0e6a797c45a14bc4aa5047428300d76a.jpg",
+      "https://thumbs.dreamstime.com/b/selfie-happy-group-people-backyard-memory-bonding-connection-together-weekend-smile-love-friends-421842911.jpg",
+      "https://c8.alamy.com/comp/2K94609/black-family-picnic-with-food-in-a-nature-park-in-summer-happy-about-quality-time-together-happiness-of-parents-children-and-elderly-people-with-a-2K94609.jpg",
+      "https://thumbs.dreamstime.com/b/journey-travel-concept-happy-family-rides-car-vacation-cartoon-vector-journey-travel-concept-happy-family-rides-car-113179256.jpg",
+      "https://cdn.outsideonline.com/wp-content/uploads/2023/05/couple-adventuring-together_h.jpg?crop=25:14&width=500&enable=upscale",
+      "https://thumbs.dreamstime.com/b/young-black-family-embracing-outdoors-smiling-camera-young-black-family-embracing-outdoors-smiling-camera-119401418.jpg",
+      "https://media.istockphoto.com/id/1282859811/photo/silly-selfie.jpg?s=612x612&w=0&k=20&c=XLMKFfSRa3kz_Obx78mtjDf0RJEkHQ50g9yAHOVXVLE=",
+      "https://miro.medium.com/1*QpSn-NKgNpTHZXClbPe64g.jpeg",
+      "https://media.cntraveler.com/photos/6942e1761d408510b0fadbfe/16:9/w_2560%2Cc_limit/besttrips2025.jpg",
+      "https://assets.mixbook.com/images/optimized/png/inside/838/2000/2_f88098901f/version/sxay5b.webp",
+      "https://media.istockphoto.com/id/1995160648/photo/wide-angle-shot-of-gen-z-group-of-friends-hanging-out-together.jpg?s=612x612&w=0&k=20&c=7SEvkSe_PCeUfF8-YR6_9I77gL_6z_RTimidlf3BMGE=",
+      "https://c8.alamy.com/comp/T727J1/group-of-happy-friends-having-fun-together-outdoors-men-piggybacking-female-friends-and-laughing-summer-vacations-T727J1.jpg",
+      "https://c8.alamy.com/comp/HTMT1A/young-happy-group-of-friends-having-fun-outdoors-and-enjoying-life-HTMT1A.jpg",
+      "https://preview.qiantucdn.com/58pic/72/07/92/05a58PICuvAQuTmWNT2zW_origin_PIC2018.jpg!qt_h320_webp",
+      "https://preview.qiantucdn.com/58pic/72/17/93/58Q58PICDEYfceu5NkSEd_origin_PIC2018.jpg!qt_h320_webp",
+      "https://preview.qiantucdn.com/58pic/73/58/34/20V58PICYBwYxYQAJ52uN_origin_PIC2018.jpg!qt_h320_webp",
+      "https://preview.qiantucdn.com/58pic/72/07/89/65m58PICkcjZudSIUtrvp_origin_PIC2018.jpg!qt_h320_webp",
+      "https://bpic.588ku.com/video_paixin_pic/23/08/22/26f8a0fe7580c20800b270895730f24b.jpg!/fh/188/unsharp/true",
+      "https://preview.qiantucdn.com/58pic/72/17/93/61z58PIC7ywumjatfxAP4_origin_PIC2018.jpg!qt_h320_webp",
+      "https://imgs.699pic.com/images/402/641/963.jpg!list1x.v2",
+      "https://imgs.699pic.com/images/502/156/581.jpg!list1x.v2",
+      "https://imgs.699pic.com/images/401/318/103.jpg!list1x.v2",
+      "https://imgs.699pic.com/images/502/230/220.jpg!list1x.v2"
+    ];
+
+    const container = document.getElementById('floatingPhotos');
+
+    function createFloatingPhoto() {
+      const img = document.createElement('img');
+      img.src = photoUrls[Math.floor(Math.random() * photoUrls.length)];
+      img.className = 'floating-photo';
+
+      // 随机参数
+      const size = Math.random() * 150 + 100; // 100-250px
+      const duration = Math.random() * 20 + 20; // 20-40秒
+      const startX = Math.random() * 100; // 0-100vw
+      const rotate = Math.random() * 60 - 30; // -30 到 30度
+
+      img.style.width = size + 'px';
+      img.style.height = 'auto';
+      img.style.left = startX + 'vw';
+      img.style.animationDuration = duration + 's';
+      img.style.animationName = 'floatPhoto';
+      img.style.transform = `rotate(${rotate}deg)`;
+
+      container.appendChild(img);
+
+      // 动画结束后移除，节省内存
+      img.addEventListener('animationend', () => img.remove());
+    }
+
+    // 每2-5秒生成一张新照片
+    setInterval(createFloatingPhoto, Math.random() * 3000 + 2000);
+
+    // 页面加载后立即开始生成几张
+    for (let i = 0; i < 8; i++) {
+      setTimeout(createFloatingPhoto, i * 2000);
+    }
+  </script>
+</body>
+</html>

@@ -125,6 +125,56 @@
     </div>
   </div>
 
+  <!-- 编辑内容模态框 -->
+<div class="edit-content-modal" id="editContentModal">
+  <div class="modal-overlay"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>编辑内容</h2>
+      <button class="close-btn" id="closeEditContentModal"><i class="fas fa-times"></i></button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="form-group">
+        <label>标题（可选）</label>
+        <input type="text" id="editContentTitle" maxlength="100" placeholder="给内容起个标题...">
+      </div>
+      
+      <div class="form-group">
+        <label>正文</label>
+        <textarea id="editContentText" rows="6" maxlength="2000" placeholder="说点什么..."></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label>标签（用空格分隔）</label>
+        <input type="text" id="editContentTags" placeholder="例如：风景 旅行 日落">
+      </div>
+      
+      <!-- 当前媒体预览（图片或视频） -->
+      <div class="current-media-preview" id="currentMediaPreview">
+        <p style="color:#64748b;margin-bottom:0.8rem;">当前媒体：</p>
+        <div id="currentMediaContainer"></div>
+      </div>
+      
+      <div class="form-group">
+        <label>更换媒体（可选）</label>
+        <label class="upload-btn">
+          <i class="fas fa-upload"></i> 选择新文件
+          <input type="file" id="newMediaInput" accept="image/*,video/*" style="display:none;">
+        </label>
+        <div class="new-media-preview" id="newMediaPreview" style="display:none;margin-top:1rem;"></div>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button type="button" class="cancel-btn" id="cancelEditContent">取消</button>
+      <button type="button" class="submit-btn" id="saveContent">保存修改</button>
+    </div>
+  </div>
+</div>
+<!-- 全局 Toast 通知 -->
+<div id="toastContainer" style="position:fixed; top:20px; right:20px; z-index:3000; display:flex; flex-direction:column; gap:10px; pointer-events:none;"></div>
+
   <!-- 脚本 -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="../../common/js/utils.js"></script>
