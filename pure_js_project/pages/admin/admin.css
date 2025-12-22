@@ -304,3 +304,54 @@ h2 {
   font-size: 1.6rem;
   flex-shrink: 0;
 }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  text-align: center;
+}
+
+.stat-card h3 {
+  margin-bottom: 0.8rem;
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.stat-card p {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.charts-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 2rem;
+}
+
+.chart-wrapper {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.chart-wrapper h3 {
+  margin-bottom: 1rem;
+  text-align: center;
+  color: #1e293b;
+}
+
+.chart-wrapper canvas {
+  width: 100% !important;
+  height: 400px !important;
+}

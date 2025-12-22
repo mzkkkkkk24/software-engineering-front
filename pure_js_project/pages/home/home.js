@@ -335,20 +335,33 @@ function createContentElement(content) {
           starsContainer.innerHTML = generateInteractiveStars(score);
           showToast('感谢你的评分！');
 
-          // 更新平均分（重新获取内容详情）
-          try {
-            const detailRes = await axios.get(`/api/content/${content.id}`);
-          if (detailRes.data.code === 200) {
-            const newAvgRating = detailRes.data.data.avgRating || 0;
-            document.getElementById(`score-${content.id}`).textContent = newAvgRating.toFixed(1);
-          }
-          } catch (err) {}
-        } catch (err) {
-          showToast('打分失败：' + (err.response?.data?.message || '未知错误'));
-        }
-      }
-    };
+          // 更新平均分和静态星星
+         try {
+           const detailRes = await axios.get(`/api/content/${content.id}`);
+           if (detailRes.data.code === 200) {
+             const updatedContent = detailRes.data.data;
+             const newAvgRating = updatedContent.avgRating || 0;
 
+             // 更新数字
+             const scoreEl = document.getElementById(`score-${content.id}`);
+             if (scoreEl) {
+               scoreEl.textContent = newAvgRating.toFixed(1);
+             }
+
+             // 更新静态星星
+             const starsContainer = item.querySelector('.content-header .stars');
+             if (starsContainer) {
+               starsContainer.innerHTML = generateStars(newAvgRating);
+             }
+           }
+         } catch (err) {
+           console.error('更新平均分失败', err);
+         }
+                 } catch (err) {
+                   showToast('打分失败：' + (err.response?.data?.message || '未知错误'));
+                 }
+               }
+             };
     // 页面加载时获取用户已有评分
     (async () => {
       try {
@@ -987,19 +1000,106 @@ async function loadFriendsList() {
 function renderFriendsList(friends) {
   const container = document.getElementById('friendsList');
   container.innerHTML = '';
+
+  if (friends.length === 0) {
+    container.innerHTML = '<div style="text-align:center; padding:2rem 0; color:#94a3b8;">暂无好友</div>';
+    document.querySelector('.friend-count').textContent = `(0)`;
+    return;
+  }
+
   friends.forEach(friend => {
     const item = document.createElement('div');
     item.className = 'user-item';
     item.innerHTML = `
-      <img src="${friend.avatar || '../../common/images/test.png'}">
+      <img src="${friend.avatar || '../../common/images/test.png'}" alt="头像">
       <div class="info">
         <h4>${friend.nickname || friend.username}</h4>
         <p>已添加</p>
       </div>
+      <div class="friend-actions">
+        <button class="more-btn" aria-label="更多操作">
+          <i class="fas fa-ellipsis-v"></i>
+        </button>
+        <!-- 注意：这里故意不加 show 类，确保默认隐藏 -->
+        <div class="friend-dropdown-menu">
+          <div class="friend-dropdown-item" data-action="profile" data-userid="${friend.id}">
+            <i class="fas fa-user"></i> 查看详情
+          </div>
+          <div class="friend-dropdown-item danger" data-action="delete" data-friendid="${friend.id}">
+            <i class="fas fa-user-times"></i> 删除好友
+          </div>
+        </div>
+      </div>
     `;
     container.appendChild(item);
   });
+
   document.querySelector('.friend-count').textContent = `(${friends.length})`;
+
+  document.querySelectorAll('.friend-dropdown-menu').forEach(menu => {
+    menu.classList.remove('show');
+  });
+
+  // ========== 下拉菜单交互逻辑 ==========
+  const moreButtons = document.querySelectorAll('.friend-actions .more-btn');
+
+  moreButtons.forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+
+      const menu = btn.nextElementSibling;
+      const isShown = menu.classList.contains('show');
+
+      // 先关闭所有菜单
+      document.querySelectorAll('.friend-dropdown-menu').forEach(m => m.classList.remove('show'));
+
+      // 如果之前没打开，才打开当前这个
+      if (!isShown) {
+        menu.classList.add('show');
+      }
+    };
+  });
+
+  // 菜单项点击
+  document.querySelectorAll('.friend-dropdown-item').forEach(item => {
+    item.onclick = async (e) => {
+      e.stopPropagation();
+
+      const action = item.dataset.action;
+      const menu = item.closest('.friend-dropdown-menu');
+
+      if (action === 'profile') {
+        const userId = item.dataset.userid;
+        const url = userId == currentUser?.id ? 'current' : userId;
+        window.location.href = `../user-detail/user-detail.html?userId=${url}`;
+      } else if (action === 'delete') {
+        const friendId = item.dataset.friendid;
+        if (confirm('确定要删除该好友吗？此操作不可恢复。')) {
+          try {
+            await axios.post(`/api/friend/delete/${friendId}`);
+            showToast('已删除好友', 'success');
+            await loadFriendsList();  
+            await loadFriendRequests();
+          } catch (err) {
+            const msg = err.response?.data?.message || '删除失败';
+            showToast(msg, 'error');
+          }
+        }
+      }
+
+      menu.classList.remove('show');
+    };
+  });
+
+  // 点击页面空白处关闭所有菜单（只绑定一次）
+  document.removeEventListener('click', closeAllFriendMenus);
+  document.addEventListener('click', closeAllFriendMenus);
+}
+
+function closeAllFriendMenus() {
+  document.querySelectorAll('.friend-dropdown-menu.show').forEach(menu => {
+    menu.classList.remove('show');
+  });
 }
 
 // 处理好友请求
@@ -1007,7 +1107,7 @@ window.handleFriendAction = async (action, friendId) => {
   try {
     const url = action === 'accept' ? `/api/friend/accept/${friendId}` : `/api/friend/reject/${friendId}`;
     await axios.post(url);
-    ashowToast(action === 'accept' ? '已添加好友' : '已拒绝');
+    showToast(action === 'accept' ? '已添加好友' : '已拒绝');
     loadFriendRequests();
     loadFriendsList();
   } catch (err) {

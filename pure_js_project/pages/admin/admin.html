@@ -33,11 +33,47 @@
     <div class="sidebar">
       <ul class="menu">
         <li class="menu-item active" data-tab="users">用户管理</li>
+        <li class="menu-item" data-tab="stats">活动统计</li>
         <li class="menu-item" data-tab="contents">内容管理</li>
       </ul>
     </div>
 
     <div class="main-panel">
+
+      <!-- 活动统计面板 -->
+<div id="stats-tab" class="tab-panel">
+  <h2>活动统计</h2>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <h3>总用户数</h3>
+      <p id="totalUsers">加载中...</p>
+    </div>
+    <div class="stat-card">
+      <h3>今日活跃用户</h3>
+      <p id="todayActive">加载中...</p>
+    </div>
+    <div class="stat-card">
+      <h3>本周活跃用户</h3>
+      <p id="weekActive">加载中...</p>
+    </div>
+    <div class="stat-card">
+      <h3>总发布内容数</h3>
+      <p id="totalPosts">加载中...</p>
+    </div>
+  </div>
+
+  <div class="charts-container">
+    <div class="chart-wrapper">
+      <h3>最近7天每日活跃用户</h3>
+      <canvas id="activeUsersChart"></canvas>
+    </div>
+    <div class="chart-wrapper">
+      <h3>最近7天每日新发布内容</h3>
+      <canvas id="dailyPostsChart"></canvas>
+    </div>
+  </div>
+</div>
+
       <!-- 用户管理面板 -->
       <div id="users-tab" class="tab-panel active">
         <h2>用户管理</h2>
@@ -85,6 +121,7 @@
 
   <!-- 脚本 -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="../../common/js/axios-config.js"></script> 
   <script src="admin.js"></script>
 </body>

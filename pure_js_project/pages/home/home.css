@@ -1631,3 +1631,170 @@ body {
 .chat-messages::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* 好友列表项 - 右侧操作菜单 */
+.friend-actions {
+  position: relative;
+}
+
+.friend-actions .more-btn {
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: #64748b;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.friend-actions .more-btn:hover {
+  background: #e2e8f0;
+  color: #3b82f6;
+}
+
+/* 下拉菜单（复用全局 dropdown 风格） */
+.friend-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 160px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.friend-dropdown-menu.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.friend-dropdown-item {
+  padding: 0.8rem 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.95rem;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.friend-dropdown-item:hover {
+  background: #f1f5f9;
+}
+
+.friend-dropdown-item.danger {
+  color: #ef4444;
+}
+
+.friend-dropdown-item.danger:hover {
+  background: #fee2e2;
+}
+
+/* ==================== 评论区优化：固定高度 + 内部滚动 + 视觉重叠 ==================== */
+
+/* 评论区整体容器 */
+.comments-section {
+  margin: 1rem -1.5rem -1.5rem -1.5rem;   /* 负 margin 向上“重叠”到卡片底部，减少整体高度占用 */
+  padding: 1rem 1.5rem 1.5rem;
+  background: #f8fafc;                    /* 与卡片底部区分开 */
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0 0 16px 16px;           /* 与卡片圆角保持一致 */
+  max-height: 420px;                      /* 关键：限制最大高度，可根据需要调整（360~480px 都合适） */
+  overflow: hidden;
+  display: none;                          /* 默认隐藏 */
+  transition: max-height 0.4s ease;       /* 展开时有平滑动画 */
+}
+
+/* 展开时显示 */
+.comments-section.show {
+  display: block;
+}
+
+/* 评论列表区域 - 可滚动 */
+.comments-list {
+  max-height: 260px;                      /* 留出评论输入框的空间 */
+  overflow-y: auto;
+  padding-right: 0.5rem;                  /* 给滚动条留点空间 */
+  margin-bottom: 1rem;
+}
+
+/* 美化滚动条（Webkit） */
+.comments-list::-webkit-scrollbar {
+  width: 6px;
+}
+.comments-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+.comments-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 单条评论样式（你已有 .comment-item，可在此补充） */
+.comment-item {
+  display: flex;
+  gap: 0.8rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px dashed #e2e8f0;
+}
+.comment-item:last-child {
+  border-bottom: none;
+}
+.comment-item img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.comment-info {
+  flex: 1;
+}
+.comment-info strong {
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+.comment-info p {
+  margin: 0.4rem 0;
+  font-size: 0.95rem;
+  color: #475569;
+  word-break: break-word;
+}
+.comment-time {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+/* 评论输入框区域 - 固定在底部 */
+.comment-form {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  padding-top: 0.8rem;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 0.5rem;
+}
+.comment-form img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.comment-form textarea {
+  flex: 1;
+  min-height: 60px;
+  max-height: 120px;
+  overflow-y: auto;
+}

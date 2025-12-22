@@ -55,6 +55,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         contentPage = 1;
         loadContents();
       }
+      else if (item.dataset.tab === 'stats') {
+        loadStats();
+      }
     });
   });
 
@@ -141,6 +144,72 @@ function renderUsers(users) {
   });
 }
 
+let activeUsersChart;
+let dailyPostsChart;
+
+async function loadStats() {
+  try {
+    // 假设后端提供统计/api/admin/stats
+    const res = await axios.get('/api/admin/user/active');
+
+    if (res.data.code === 200) {
+      const data = res.data.data;
+
+      // 填充卡片
+      document.getElementById('totalUsers').textContent = data.totalUsers || 0;
+      document.getElementById('todayActive').textContent = data.todayActive || 0;
+      document.getElementById('weekActive').textContent = data.weekActive || 0;
+      document.getElementById('totalPosts').textContent = data.totalPosts || 0;
+
+      // 渲染图表（销毁旧图表防止重复）
+      if (activeUsersChart) activeUsersChart.destroy();
+      if (dailyPostsChart) dailyPostsChart.destroy();
+
+      const ctx1 = document.getElementById('activeUsersChart').getContext('2d');
+      activeUsersChart = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: data.dailyActive.labels,  // e.g. ['12-15', '12-16', ..., '12-21']
+          datasets: [{
+            label: '活跃用户数',
+            data: data.dailyActive.values,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+
+      const ctx2 = document.getElementById('dailyPostsChart').getContext('2d');
+      dailyPostsChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels: data.dailyPosts.labels,
+          datasets: [{
+            label: '新发布内容数',
+            data: data.dailyPosts.values,
+            backgroundColor: '#10b981'
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    } else {
+      showToast('加载统计数据失败', 'error');
+    }
+  } catch (err) {
+    showToast('网络错误，无法加载统计', 'error');
+    console.error(err);
+  }
+}
+
 // 加载内容列表（分页）
 async function loadContents() {
   const keyword = document.getElementById('contentSearch').value.trim();
@@ -148,7 +217,7 @@ async function loadContents() {
   tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;">加载中...</td></tr>';
 
   try {
-    const res = await axios.get('/api/admin/search', {
+    const res = await axios.get('/api/content/search', {
       params: { 
         keyword: keyword ,
         page: contentPage, 
