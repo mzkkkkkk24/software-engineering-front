@@ -1,4 +1,29 @@
+// ===== OPFS 支持=====
+const OPFS_PREFIX = 'opfs://';
 
+async function getOPFSRoot() {
+  return await navigator.storage.getDirectory();
+}
+
+async function getFileUrlFromOPFS(opfsPath) {
+  if (!opfsPath) return '../../common/images/placeholder.png';
+
+  if (!opfsPath.startsWith(OPFS_PREFIX)) {
+    return opfsPath; // 兼容旧服务器URL
+  }
+
+  try {
+    const root = await getOPFSRoot();
+    const mediaDir = await root.getDirectoryHandle('media');
+    const fileName = opfsPath.replace(OPFS_PREFIX, '');
+    const fileHandle = await mediaDir.getFileHandle(fileName);
+    const file = await fileHandle.getFile();
+    return URL.createObjectURL(file);
+  } catch (err) {
+    console.error('OPFS 读取失败:', err);
+    return '../../common/images/placeholder.png';
+  }
+}
 let tempAvatarFile = null;
 let currentUserId = null; // 当前查看的用户ID
 let isCurrentUser = false; // 是否是自己的主页
@@ -54,7 +79,7 @@ async function fetchUserPosts(userId, page = 1, size = 20) {
   return [];
 }
 
-function renderProfile(user, posts, isCurrentUser) {
+async function renderProfile(user, posts, isCurrentUser) {
   document.getElementById('profileAvatar').src = user.avatar || '../../common/images/test.png';
   document.getElementById('profileUsername').textContent = user.nickname || user.username;
   document.getElementById('profileBio').textContent = user.bio || '这家伙很懒，什么都没写～';
@@ -75,38 +100,50 @@ function renderProfile(user, posts, isCurrentUser) {
 
   // 渲染内容
   const list = document.getElementById('profileContentList');
-  list.innerHTML = '';
+list.innerHTML = '';
 
-  if (posts.length === 0) {
-    document.querySelector('.no-content-profile').style.display = 'block';
-    return;
-  }
-
-  document.querySelector('.no-content-profile').style.display = 'none';
-
-  posts.forEach(post => {
-    const item = createContentElement(post);
-    list.appendChild(item);
-  });
+if (posts.length === 0) {
+  document.querySelector('.no-content-profile').style.display = 'block';
+  return;
 }
 
-function createContentElement(post) {
+document.querySelector('.no-content-profile').style.display = 'none';
+
+for (const post of posts) {
+  const item = await createContentElement(post);  // 必须 await
+  list.appendChild(item);
+}
+}
+
+async function createContentElement(post) {
   const item = document.createElement('div');
   item.className = 'content-item';
   item.dataset.id = post.id;
 
-  // 当前查看的用户是否是内容发布者
-  const isOwn = currentUserId && post.userId === currentUserId;
+  // 判断是否是自己的内容（显示编辑/删除按钮）
+  const isOwn = isCurrentUser && post.userId === currentUserId;
 
+  // ===== 媒体处理：异步获取 blob URL =====
   let mediaHtml = '';
-  if (post.type === 'IMAGE' && post.mediaUrls?.length) {
-    mediaHtml = post.mediaUrls.map(url => 
-      `<div class="media-container"><img src="${url}" alt="图片"></div>`
-    ).join('');
-  } else if (post.type === 'VIDEO' && post.mediaUrls?.length) {
-    mediaHtml = `<div class="media-container video-container">
-      <video controls><source src="${post.mediaUrls[0]}" type="video/mp4"></video>
-    </div>`;
+  if ((post.type === 'IMAGE' || post.type === 'VIDEO') && post.fileUrl) {
+    const src = await getFileUrlFromOPFS(post.fileUrl);
+
+    if (post.type === 'IMAGE') {
+      mediaHtml = `
+        <div class="media-container">
+          <img src="${src}" alt="图片" loading="lazy">
+        </div>
+      `;
+    } else if (post.type === 'VIDEO') {
+      mediaHtml = `
+        <div class="media-container video-container">
+          <video controls preload="metadata">
+            <source src="${src}" type="video/mp4">
+            你的浏览器不支持视频播放。
+          </video>
+        </div>
+      `;
+    }
   }
 
   // 生成静态星星

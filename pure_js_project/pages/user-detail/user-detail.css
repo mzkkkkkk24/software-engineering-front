@@ -900,3 +900,14 @@ body.menu-open::before {
   max-height: 120px;
   overflow-y: auto;
 }
+
+.media-container {
+  width: 100%;
+  max-width: 680px;              /* 放大：原来可能 600px，现在更大 */
+  margin: 1.5rem auto;           /* 上下间距更大 + 自动居中 */
+  border-radius: 18px;           /* 更大圆角，更现代 */
+  overflow: hidden;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  background: #000;              /* 视频黑底，避免白闪 */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}

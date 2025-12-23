@@ -119,6 +119,44 @@
         <div class="pagination" id="contentsPagination"></div>
       </div>
 
+<!-- 内容详情模态框 -->
+<div class="modal" id="contentDetailModal">
+  <div class="modal-overlay" id="closeDetailModal"></div>
+  <div class="modal-content" style="max-width:900px; width:95%; background:white; border-radius:16px;">
+    <div class="modal-header" style="padding:1.5rem; background:#1e293b; color:white; display:flex; justify-content:space-between; align-items:center;">
+      <h2 style="margin:0;">内容详情</h2>
+      <button id="closeDetailModalBtn" style="background:none; border:none; color:white; font-size:1.8rem; cursor:pointer;">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body" style="padding:2rem; max-height:80vh; overflow-y:auto;">
+      <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+        <img id="detailAvatar" src="" style="width:60px; height:60px; border-radius:50%; object-fit:cover;">
+        <div>
+          <strong id="detailUsername" style="font-size:1.2rem;"></strong><br>
+          <small id="detailTime" style="color:#64748b;"></small>
+        </div>
+      </div>
+
+      <!-- 内容标题（大标题） -->
+      <div style="margin-bottom:1.2rem; text-align:left;">
+        <h2 id="detailTitle" style="font-size:1.8rem; font-weight:700; color:#1e293b; margin:0;"></h2>
+      </div>
+
+      <!-- 正文内容区域 -->
+      <div style="margin-bottom:1.5rem;">
+        <p id="detailText" style="font-size:1.1rem; line-height:1.8; white-space:pre-wrap; background:#f8fafc; padding:1rem; border-radius:8px;"></p>
+      </div>
+
+      <div id="detailMedia" style="text-align:center; margin-bottom:1.5rem;"></div>
+
+      <div style="color:#64748b; font-size:0.9rem;">
+        内容ID: <span id="detailId"></span> | 类型: <span id="detailType"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
   <!-- 脚本 -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

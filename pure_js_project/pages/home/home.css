@@ -1743,7 +1743,7 @@ body {
   background: #94a3b8;
 }
 
-/* 单条评论样式（你已有 .comment-item，可在此补充） */
+/* 单条评论样式*/
 .comment-item {
   display: flex;
   gap: 0.8rem;
@@ -1797,4 +1797,103 @@ body {
   min-height: 60px;
   max-height: 120px;
   overflow-y: auto;
+}
+
+/* 媒体容器：左侧浮动，固定宽度，带内间距和圆角 */
+.media-container {
+  width: 100%;
+  max-width: 680px;              /* 放大：原来可能 600px，现在更大 */
+  margin: 1.5rem auto;           /* 上下间距更大 + 自动居中 */
+  border-radius: 18px;           /* 更大圆角，更现代 */
+  overflow: hidden;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  background: #000;              /* 视频黑底，避免白闪 */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.media-container:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* 图片：等比例填充容器，完整显示 */
+.media-container img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;           /* 关键：完整显示，不裁剪 */
+  background: #f1f5f9;
+}
+
+/* 视频同理 */
+.media-container.video-container video {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 16px;
+}
+
+/* 内容主体：给左侧图片留出空间 */
+.content-body {
+  overflow: hidden;               /* 清除浮动 */
+  line-height: 1.7;
+}
+
+/* 当没有图片时，内容正常占满 */
+.content-body:empty + .media-container {
+  float: none;
+  margin: 1rem auto;
+}
+
+/* ==================== 大图查看模态框 ==================== */
+.image-modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 2000;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(8px);
+}
+
+.image-modal.show {
+  display: flex;
+}
+
+.image-modal img {
+  max-width: 95vw;
+  max-height: 95vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+  animation: zoomIn 0.4s ease;
+}
+
+@keyframes zoomIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* 关闭按钮 */
+.image-modal .close-modal {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  width: 48px;
+  height: 48px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 50%;
+  color: white;
+  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.image-modal .close-modal:hover {
+  background: rgba(239, 68, 68, 0.8);
 }

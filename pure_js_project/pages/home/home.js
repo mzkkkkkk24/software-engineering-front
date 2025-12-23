@@ -1,4 +1,49 @@
+// OPFS 相关
+const OPFS_PREFIX = 'opfs://';  // 我们自定义的前缀标识
 
+async function getOPFSRoot() {
+  return await navigator.storage.getDirectory();
+}
+
+async function saveFileToOPFS(file) {
+  try {
+    const root = await getOPFSRoot();
+    const mediaDir = await root.getDirectoryHandle('media', { create: true });
+
+    // 生成唯一文件名（用户名 + 时间戳 + 随机）
+    const timestamp = Date.now();
+    const username = currentUser?.username || 'user';
+    const ext = file.name.split('.').pop() || '';
+    const fileName = `${username}_${timestamp}_${Math.random().toString(36).substr(2, 8)}.${ext}`;
+
+    const fileHandle = await mediaDir.getFileHandle(fileName, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(file);
+    await writable.close();
+
+    return `${OPFS_PREFIX}${fileName}`;
+  } catch (err) {
+    console.error('保存到 OPFS 失败', err);
+    showToast('媒体文件保存失败', 'error');
+    return null;
+  }
+}
+
+async function getFileUrlFromOPFS(opfsPath) {
+  if (!opfsPath.startsWith(OPFS_PREFIX)) return opfsPath; // 兼容旧服务器URL
+
+  try {
+    const root = await getOPFSRoot();
+    const mediaDir = await root.getDirectoryHandle('media');
+    const fileName = opfsPath.replace(OPFS_PREFIX, '');
+    const fileHandle = await mediaDir.getFileHandle(fileName);
+    const file = await fileHandle.getFile();
+    return URL.createObjectURL(file);
+  } catch (err) {
+    console.error('读取 OPFS 文件失败', err);
+    return '../../common/images/placeholder.png'; // 丢失时显示占位图
+  }
+}
 let currentPage = 1;
 const pageSize = 10;
 let hasMore = true;
@@ -20,6 +65,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   initInteractions();
   loadContentList(true); // 初次加载
   initTopSearch();  
+
+  
 
   //无限滚动
   let loading = false; // 防止重复触发
@@ -100,7 +147,7 @@ async function loadContentList(isRefresh = false) {
 
     if (res.data.code === 200) {
       const { records, total, pages } = res.data.data;
-      renderContentList(records);
+      await renderContentList(records);
 
       currentPage++;
       hasMore = currentPage <= pages;
@@ -119,31 +166,41 @@ async function loadContentList(isRefresh = false) {
 }
 
 // 渲染内容
-function renderContentList(contents) {
+async function renderContentList(contents) {
   const list = document.getElementById('contentList');
 
-  contents.forEach(content => {
-    const item = createContentElement(content);
+  for (const content of contents) {
+    const item = await createContentElement(content); // 必须 await
     list.appendChild(item);
-  });
+  }
 }
 
-function createContentElement(content) {
+async function createContentElement(content) {
   const item = document.createElement('div');
   item.className = 'content-item';
   item.dataset.id = content.id;
 
   const isOwn = currentUser && content.userId === currentUser.id;
 
+  // ===== 媒体部分：异步获取 URL =====
   let mediaHtml = '';
-  if (content.type === 'IMAGE' && content.mediaUrls?.length) {
-    mediaHtml = content.mediaUrls.map(url => 
-      `<div class="media-container"><img src="${url}" alt="图片"></div>`
-    ).join('');
-  } else if (content.type === 'VIDEO' && content.mediaUrls?.length) {
-    mediaHtml = `<div class="media-container video-container">
-      <video controls><source src="${content.mediaUrls[0]}" type="video/mp4"></video>
-    </div>`;
+  const mediaUrl = content.fileUrl || (content.mediaUrls && content.mediaUrls[0]);
+
+  if ((content.type === 'IMAGE' || content.type === 'VIDEO') && mediaUrl) {
+    const src = await getFileUrlFromOPFS(mediaUrl);
+
+    if (content.type === 'IMAGE') {
+      mediaHtml = `<div class="media-container">
+        <img src="${src}" alt="图片" loading="lazy" style="max-width:100%; border-radius:12px;">
+      </div>`;
+    } else if (content.type === 'VIDEO') {
+      mediaHtml = `<div class="media-container video-container">
+        <video controls preload="metadata" style="width:100%; border-radius:12px;">
+          <source src="${src}" type="video/mp4">
+          你的浏览器不支持视频播放。
+        </video>
+      </div>`;
+    }
   }
 
   const actionsHtml = isOwn ? `
@@ -188,25 +245,21 @@ function createContentElement(content) {
       </div>
       <div class="rating">
         <span class="score" id="score-${content.id}">${(content.avgRating || 0).toFixed(1)}</span>
-         <div class="stars">${generateStars(content.avgRating || 0)}</div>
+        <div class="stars">${generateStars(content.avgRating || 0)}</div>
       </div>
     </div>
     <div class="content-body">
-          <h3 class="content-title" style="margin-bottom: 0.8rem; font-size: 1.2rem; font-weight: 600; color: #1e293b;">
+      <h3 class="content-title" style="margin-bottom: 0.8rem; font-size: 1.2rem; font-weight: 600; color: #1e293b;">
         ${content.title || ''}
       </h3>
-
-     <!-- 标签显示 -->
-    ${Array.isArray(content.tags) && content.tags.length > 0 ? `
-      <div class="content-tags">
-        ${content.tags.map(tag => `<span class="content-tag">#${tag.trim()}</span>`).join('')}
-      </div>
-    ` : ''}
-
-    ${content.description ? `<p class="content-text">${content.description}</p>` : ''}
-    ${mediaHtml}
+      ${Array.isArray(content.tags) && content.tags.length > 0 ? `
+        <div class="content-tags">
+          ${content.tags.map(tag => `<span class="content-tag">#${tag.trim()}</span>`).join('')}
+        </div>
+      ` : ''}
+      ${content.description ? `<p class="content-text">${content.description}</p>` : ''}
+      ${mediaHtml}
     </div>
-  </div>
 
     <!-- ===== 内容底部：评论按钮 ===== -->
     <div class="content-footer">
@@ -442,9 +495,8 @@ async function handlePostSubmit() {
   const postTitleInput = document.getElementById('postTitle');
   const postTextInput = document.getElementById('postText');
   const postTagsInput = document.getElementById('postTags');
-  const uploadImageInput = document.getElementById('uploadImage');
+  const uploadImageInput = document.getElementById('uploadImage');   // 支持 multiple
   const uploadVideoInput = document.getElementById('uploadVideo');
-  const imagePreview = document.getElementById('imagePreview');
   const submitBtn = document.getElementById('submitPost');
 
   const title = postTitleInput.value.trim();
@@ -456,90 +508,101 @@ async function handlePostSubmit() {
     return;
   }
 
-  // 处理标签
   const tags = tagsStr
     ? tagsStr.split(',').map(t => t.trim()).filter(t => t.length > 0)
     : [];
 
-  // 获取选择的文件（图片多选取第一张，视频单选）
-  const imageFile = uploadImageInput.files[0] || null;
+  const imageFiles = Array.from(uploadImageInput.files);   // 多图
   const videoFile = uploadVideoInput.files[0] || null;
 
-  // 判断内容类型
   let type = 'TEXT';
-  let fileToUpload = null;
-
-  if (videoFile) {
-    type = 'VIDEO';
-    fileToUpload = videoFile;
-  } else if (imageFile) {
-    type = 'IMAGE';
-    fileToUpload = imageFile;
-  }
+  if (videoFile) type = 'VIDEO';
+  else if (imageFiles.length > 0) type = 'IMAGE';
 
   try {
     submitBtn.disabled = true;
     submitBtn.textContent = '发布中...';
 
-    let fileUrl = null;
-    let thumbnailUrl = null;
+    let mediaUrls = null;
 
-    // 如果有媒体文件，先上传获取路径
-    if (fileToUpload) {
-      const uploadRes = await uploadSingleFile(fileToUpload);
-      fileUrl = uploadRes.fileUrl;         
-      thumbnailUrl = uploadRes.thumbnailUrl || null;  // 如果有缩略图（视频可能有）
-    }
+    // 保存图片/视频到 OPFS
+const imageFiles = Array.from(document.getElementById('uploadImage').files);
+const videoFile = document.getElementById('uploadVideo').files[0];
 
-    // 构造符合后端要求的 JSON
-    const payload = {
-      title: title,
-      description: description || null,
-      type: type,
-      fileUrl: fileUrl,          // 单个字符串或 null
-      thumbnailUrl: thumbnailUrl, // 可选，视频时可能需要
-      tags: tags                 // 数组，如 ["旅行", "美食"]
-    };
-
-    // 发送纯 JSON 请求
-    const res = await axios.post('/api/content', payload, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
+const filesToSave = videoFile ? [videoFile] : imageFiles;
+for (const file of filesToSave) {
+  const opfsPath = await saveFileToOPFS(file);
+  if (opfsPath) {
+    mediaUrls = opfsPath;
+  }
+}
+    // ========== 调用后端发布接口 ==========
+    const res = await axios.post('/api/content', {
+      title,
+      description,
+      tags,
+      type,
+      fileUrl: mediaUrls   
     });
 
     if (res.data.code === 200) {
       showToast('发布成功！');
+      // 清空表单
+      postTitleInput.value = '';
+      postTextInput.value = '';
+      postTagsInput.value = '';
+      uploadImageInput.value = '';
+      uploadVideoInput.value = '';
+      document.getElementById('imagePreview').innerHTML = '';
+
+      // 关闭模态框
       document.getElementById('postModal').classList.remove('show');
-      clearPostForm();
-      loadContentList(true);  // 刷新列表
-    } else {
-      showToast('发布失败：' + (res.data.message || '未知错误'));
+
+      // 刷新列表（放在最前面）
+      loadContentList(true);
     }
+
   } catch (err) {
     console.error('发布失败', err);
-    showToast('操作失败：' + (err.response?.data?.message || err.message || '网络错误'));
+    showToast('发布失败：' + (err.response?.data?.message || '未知错误'), 'error');
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = '发布';
   }
+}
 
-  // 清空表单
-  function clearPostForm() {
-    postTitleInput.value = '';
-    postTextInput.value = '';
-    postTagsInput.value = '';
-    uploadImageInput.value = '';
-    uploadVideoInput.value = '';
-    imagePreview.innerHTML = '';
+async function saveFileToLocalDisk(file) {
+  if (!dataDirectoryHandle) return null;
+
+  try {
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/[-:T.]/g, '').slice(0, 14);
+    const username = currentUser?.username || 'anonymous';
+    const ext = file.name.split('.').pop().toLowerCase();
+    const newFileName = `${username}_${timestamp}_${Math.random().toString(36).substr(2, 5)}.${ext}`;
+
+    // 创建用户子文件夹
+    const userDirHandle = await dataDirectoryHandle.getDirectoryHandle(username, { create: true });
+
+    // 创建文件
+    const fileHandle = await userDirHandle.getFileHandle(newFileName, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(file);
+    await writable.close();
+
+    const localPath = `${LOCAL_PREFIX}${username}/${newFileName}`;
+    return localPath;
+  } catch (err) {
+    console.error('保存文件到本地失败', err);
+    showToast('保存媒体文件失败', 'error');
+    return null;
   }
 }
 
 // 独立的文件上传函数
 async function uploadSingleFile(file) {
   const formData = new FormData();
-  formData.append('file', file);  // 后端参数名根据实际情况调整
-
+  formData.append('file', file);  
   const res = await axios.post('/api/content', formData);  
   if (res.data.code === 200) {
     return {
@@ -656,7 +719,6 @@ async function initNotificationDropdown() {
   updateBadge();
 }
 
-// 在 initInteractions() 中调用
 initNotificationDropdown();
 
 // ==================== 筛选按钮弹出模态框 ====================
@@ -1342,55 +1404,39 @@ chatInput.addEventListener('input', () => {
   chatInput.style.height = chatInput.scrollHeight + 'px';
 });
 
-/*et dataDirectoryHandle; // 用户选择的文件夹句柄
-
-// 让用户选择数据存储文件夹（只需一次）
-async function chooseDataFolder() {
-  try {
-    dataDirectoryHandle = await window.showDirectoryPicker();
-    localStorage.setItem('dataFolderChosen', 'true');
-    showToast('数据文件夹已选择，所有内容将保存到本地磁盘');
-  } catch (err) {
-    console.log('用户取消选择');
+// ==================== 双击图片打开大图查看 ====================
+document.addEventListener('click', (e) => {
+  // 点击关闭模态框（背景或关闭按钮）
+  const modal = document.getElementById('imageModal');
+  if (e.target === modal || e.target.closest('#closeImageModal')) {
+    modal.classList.remove('show');
+    document.body.style.overflow = ''; // 恢复滚动
   }
-}
+});
 
-// 在页面加载时检查是否已选择文件夹
-if (!localStorage.getItem('dataFolderChosen')) {
-  setTimeout(() => {
-    if (confirm('首次使用需要选择一个本地文件夹来保存图片和视频，是否现在选择？')) {
-      chooseDataFolder();
+// 双击媒体容器中的图片/视频
+document.addEventListener('dblclick', (e) => {
+  const img = e.target.closest('.media-container img');
+  const video = e.target.closest('.media-container video');
+
+  if (img || video) {
+    const src = img ? img.src : video.querySelector('source')?.src || '';
+    if (src && src.startsWith('blob:')) {  // 只处理本地 blob 图（OPFS 生成的）
+      const modal = document.getElementById('imageModal');
+      const modalImg = document.getElementById('modalImage');
+
+      // 视频也用 img 显示第一帧（或直接用 video 标签也行，这里统一用 img）
+      modalImg.src = src;
+      modal.classList.add('show');
+      document.body.style.overflow = 'hidden'; // 禁止背景滚动
     }
-  }, 1000);
-}
-
-// 修改上传保存逻辑
-async function saveFileToLocal(file) {
-  if (!dataDirectoryHandle) {
-    showToast('请先选择数据存储文件夹', 'error');
-    return null;
   }
+});
 
-  const now = new Date();
-  const timestamp = now.toISOString().slice(0,19).replace(/[-:T]/g, '').slice(0,14);
-  const username = currentUser?.username || 'user';
-  const ext = file.name.split('.').pop();
-  const newFileName = `${username}_${timestamp}.${ext}`;
-
-  // 创建 user 子文件夹
-  let userDirHandle;
-  try {
-    userDirHandle = await dataDirectoryHandle.getDirectoryHandle(username, { create: true });
-  } catch {
-    userDirHandle = await dataDirectoryHandle.getDirectoryHandle(username, { create: true });
+// ESC 键关闭
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.getElementById('imageModal')?.classList.remove('show');
+    document.body.style.overflow = '';
   }
-
-  // 保存文件
-  const fileHandle = await userDirHandle.getFileHandle(newFileName, { create: true });
-  const writable = await fileHandle.createWritable();
-  await writable.write(file);
-  await writable.close();
-
-  // 返回本地相对路径（用于显示）
-  return `local://${username}/${newFileName}`;
-}*/
+});
