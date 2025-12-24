@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="../../common/css/global.css">
   <link rel="stylesheet" href="../../common/css/common.css">
   <!-- 首页专属样式 -->
-  <link rel="stylesheet" href="home.css">
+  <link rel="stylesheet" href="home_multimodal.css">
 </head>
 <body>
   <!-- 彩色滚动背景 -->
@@ -31,8 +31,13 @@
 
       <!-- 搜索框 -->
       <div class="search-bar">
-        <input type="text" id="searchInput" placeholder="搜索内容、标签或用户...">
-        <button type="button" id="searchBtn"><i class="fas fa-search"></i></button>
+        <select id="searchMode" class="search-mode-select" aria-label="搜索模式">
+         <option value="content">内容检索</option>
+         <option value="text">以文搜图</option>
+         <option value="image">以图搜图</option>
+       </select>
+        <input type="text" id="searchInput" placeholder="输入描述词（如：开心的狗）或关键词...">
+        <button type="button" id="searchBtn" aria-label="搜索"><i class="fas fa-search"></i></button>
       </div>
 
       <!-- 右侧功能区 -->
@@ -312,6 +317,6 @@
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="../../common/js/utils.js"></script>
   <script src="../../common/js/axios-config.js"></script> 
-  <script src="home.js"></script>
+  <script src="home_multimodal.js"></script>
 </body>
 </html>

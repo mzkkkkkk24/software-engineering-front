@@ -1897,3 +1897,59 @@ body {
 .image-modal .close-modal:hover {
   background: rgba(239, 68, 68, 0.8);
 }
+
+.content-text-wrapper {
+  margin: 1rem 0;
+  line-height: 1.7;
+}
+
+.content-text {
+  margin: 0;
+  word-break: break-word;
+  color: #374151;
+  font-size: 1rem;
+}
+
+.ellipsis {
+  color: #64748b;
+}
+
+.expand-btn:hover,
+.collapse-btn:hover {
+  text-decoration: underline;
+}
+
+/* ==================== 多模态搜索（文本搜图 / 以图搜图） ==================== */
+/* 说明：不改现有结构，只在底部覆盖 search-bar 的布局，让它支持 mode 下拉 */
+.search-bar{
+  display:flex;
+  align-items:center;
+  gap:0.6rem;
+}
+
+.search-mode-select{
+  height:48px;
+  padding:0 0.9rem;
+  border:1px solid #e2e8f0;
+  border-radius:999px;
+  background:#fff;
+  color:#64748b;
+  font-weight:600;
+  font-size:0.95rem;
+}
+
+.search-bar input{
+  flex:1;
+  padding:0 1.2rem;
+}
+
+/* 覆盖原先绝对定位的按钮，改为 flex 布局 */
+.search-bar button{
+  position:static;
+  top:auto;
+  right:auto;
+  transform:none;
+  width:48px;
+  height:48px;
+  border-radius:24px;
+}

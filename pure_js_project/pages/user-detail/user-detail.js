@@ -1,13 +1,42 @@
 // ===== OPFS 支持=====
 const OPFS_PREFIX = 'opfs://';
 
+// ===== OPFS 保存文件 =====
+async function saveFileToOPFS(file) {
+  if (!file) return null;
+
+  try {
+    const root = await getOPFSRoot();
+    const mediaDir = await root.getDirectoryHandle('media', { create: true });
+
+    // 生成唯一文件名：用户ID_时间戳_随机.后缀
+    const timestamp = Date.now();
+    const userId = currentUserId || 'user';
+    const random = Math.random().toString(36).substr(2, 8);
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+    const fileName = `avatar_${userId}_${timestamp}_${random}.${ext}`;
+
+    const fileHandle = await mediaDir.getFileHandle(fileName, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(file);
+    await writable.close();
+
+    return `${OPFS_PREFIX}${fileName}`;
+  } catch (err) {
+    console.error('保存头像到 OPFS 失败', err);
+    showToast('头像保存失败，请重试', 'error');
+    return null;
+  }
+}
+
 async function getOPFSRoot() {
   return await navigator.storage.getDirectory();
 }
 
 async function getFileUrlFromOPFS(opfsPath) {
-  if (!opfsPath) return '../../common/images/placeholder.png';
-
+ if (!opfsPath || typeof opfsPath !== 'string') {
+    return '../../common/images/test.png';  // 直接返回默认头像
+  }
   if (!opfsPath.startsWith(OPFS_PREFIX)) {
     return opfsPath; // 兼容旧服务器URL
   }
@@ -21,7 +50,7 @@ async function getFileUrlFromOPFS(opfsPath) {
     return URL.createObjectURL(file);
   } catch (err) {
     console.error('OPFS 读取失败:', err);
-    return '../../common/images/placeholder.png';
+    return '../../common/images/tests.png';
   }
 }
 let tempAvatarFile = null;
@@ -44,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   try {
     // 获取要查看的用户信息
     const targetUser = await fetchTargetUser(userIdParam);
-    const userPosts = await fetchUserPosts(targetUser.id);
+    const userPosts = await fetchUserPosts(targetUser.id,userIdParam);
 
     currentUserId = targetUser.id;
     isCurrentUser = userIdParam === 'current';
@@ -68,19 +97,44 @@ async function fetchTargetUser(userIdParam) {
   throw new Error('获取用户信息失败');
 }
 
-// 获取用户内容列表（分页）
-async function fetchUserPosts(userId, page = 1, size = 20) {
-  const res = await axios.get(`/api/content/user`, {
-    params: { page, size }
-  });
-  if (res.data.code === 200) {
-    return res.data.data.records || [];
+
+async function fetchUserPosts(userId, userIdParam, page = 1, size = 20) {
+  let url;
+  let params = { page, size };
+
+  if (userIdParam === 'current' || isCurrentUser) {
+    // 访问自己的主页
+    url = '/api/content/user';
+  } else {
+    // 访问他人主页
+    url = `/api/content/${userId}`;
   }
-  return [];
+  try {
+    const res = await axios.get(url, { params });
+    if (res.data.code === 200) {
+      // 关键修改：兼容两种返回结构
+      if (res.data.data.records) {
+        // 自己的分页结构
+        return res.data.data.records || [];
+      } else if (Array.isArray(res.data.data)) {
+        // 他人返回直接是数组
+        return res.data.data || [];
+      } else if (res.data.data && typeof res.data.data === 'object') {
+        // 可能返回单个对象或列表对象，统一转成数组
+        return res.data.data.list || [res.data.data] || [];
+      }
+      return [];
+    }
+    return [];
+  } catch (err) {
+    console.error('获取内容列表失败', err);
+    return [];
+  }
 }
 
 async function renderProfile(user, posts, isCurrentUser) {
-  document.getElementById('profileAvatar').src = user.avatar || '../../common/images/test.png';
+ const avatarUrl = await getFileUrlFromOPFS(user.avatar);
+ document.getElementById('profileAvatar').src = avatarUrl;
   document.getElementById('profileUsername').textContent = user.nickname || user.username;
   document.getElementById('profileBio').textContent = user.bio || '这家伙很懒，什么都没写～';
   document.getElementById('postCount').textContent = posts.length;
@@ -116,6 +170,7 @@ for (const post of posts) {
 }
 
 async function createContentElement(post) {
+   const postAvatarUrl = await getFileUrlFromOPFS(post.avatar || post.userAvatar || '');
   const item = document.createElement('div');
   item.className = 'content-item';
   item.dataset.id = post.id;
@@ -171,13 +226,39 @@ async function createContentElement(post) {
     }
     return html;
   }
+ 
+  
 
   // 平均分
   const avgScore = (post.avgRating || 0).toFixed(1);
 
+  let textHtml = '';
+const fullTextRaw = (post.text || post.description || '').trim();
+const fullText = fullTextRaw.trim().replace(/\n/g, '<br>'); // 支持换行显示
+const maxLength = 200;
+if (fullTextRaw.length > maxLength) {
+  const shortTextRaw = fullTextRaw.substring(0, maxLength);
+  const shortText = shortTextRaw.replace(/\n/g, '<br>');
+  
+  textHtml = `
+    <div class="content-text-wrapper" data-id="${post.id}">
+      <p class="content-text content-text-short">
+        ${shortText}<span class="ellipsis">...</span>
+        <span class="expand-btn" style="color:#3b82f6;cursor:pointer;margin-left:4px;font-weight:500;">展开</span>
+      </p>
+      <p class="content-text content-text-full" style="display:none;">
+        ${fullText}
+        <span class="collapse-btn" style="color:#3b82f6;cursor:pointer;margin-left:8px;font-weight:500;">收起</span>
+      </p>
+    </div>
+  `;
+}else if (fullTextRaw) {
+  textHtml = `<p class="content-text">${fullText}</p>`;
+}
+
   item.innerHTML = `
     <div class="content-header">
-      <img src="${post.avatar || '../../common/images/test.png'}" alt="头像" class="clickable-avatar" data-userid="${post.userId}">
+      <img src="${postAvatarUrl}" alt="头像" class="clickable-avatar" data-userid="${post.userId}">
       <div class="user-meta">
         <h3 class="username clickable-avatar" data-userid="${post.userId}">${post.nickname || post.username}</h3>
         <p class="post-time">${formatTime(post.createTime)}</p>
@@ -215,7 +296,7 @@ async function createContentElement(post) {
         </div>
       ` : ''}
 
-      <p class="content-text">${post.text || post.description || ''}</p>
+      ${textHtml}
       ${mediaHtml}
     </div>
 
@@ -237,13 +318,14 @@ async function createContentElement(post) {
     <div class="comments-section" id="commentsSection-${post.id}" style="display:none;">
       <div class="comments-list" id="commentsList-${post.id}"></div>
       <div class="comment-form">
-        <img src="${localStorage.getItem('avatar') || '../../common/images/test.png'}" alt="我的头像">
+        <img src="${postAvatarUrl}" alt="头像" class="clickable-avatar" data-userid="${post.userId}">
         <textarea class="comment-textarea" placeholder="写下你的评论..."></textarea>
         <button class="submit-comment-btn" data-contentid="${post.id}">发送</button>
       </div>
     </div>
   `;
 
+  
   // 头像/用户名点击跳转到对应用户主页
   item.querySelectorAll('.clickable-avatar').forEach(el => {
     el.onclick = () => {
@@ -298,7 +380,7 @@ async function createContentElement(post) {
           const cmtEl = document.createElement('div');
           cmtEl.style = 'display:flex;gap:1rem;padding:0.8rem 0;border-bottom:1px solid #f1f5f9;';
           cmtEl.innerHTML = `
-            <img src="${cmt.avatar || '../../common/images/test.png'}" style="width:36px;height:36px;border-radius:50%;flex-shrink:0;">
+            <img src="${postAvatarUrl}" alt="头像" class="clickable-avatar" data-userid="${post.userId}" style="width:36px;height:36px;border-radius:50%;flex-shrink:0;">
             <div style="flex:1;">
               <div style="font-weight:600;font-size:0.95rem;">${cmt.nickname || cmt.username}</div>
               <div style="color:#64748b;margin:0.4rem 0;">${cmt.content}</div>
@@ -580,7 +662,6 @@ item.querySelector('.edit-item').onclick = () => {
 
         // 刷新页面或局部更新卡片（推荐局部更新更流畅）
         location.reload(); // 简单方式：刷新页面
-        // 更优：可以重新调用 renderProfile 或局部替换 item.innerHTML
       } else {
         showToast(updateRes.data.message || '修改失败');
       }
@@ -640,6 +721,27 @@ item.querySelector('.edit-item').onclick = () => {
   });
 }
 
+  // ===== 为当前卡片绑定展开/收起事件 =====
+const wrapper = item.querySelector('.content-text-wrapper');
+if (wrapper) {
+  const shortP = wrapper.querySelector('.content-text-short');
+  const fullP = wrapper.querySelector('.content-text-full');
+  const expandBtn = wrapper.querySelector('.expand-btn');
+  const collapseBtn = wrapper.querySelector('.collapse-btn');
+
+  expandBtn.onclick = (e) => {
+    e.stopPropagation(); // 防止触发卡片点击跳转
+    shortP.style.display = 'none';
+    fullP.style.display = 'block';
+  };
+
+  collapseBtn.onclick = (e) => {
+    e.stopPropagation();
+    fullP.style.display = 'none';
+    shortP.style.display = 'block';
+  };
+}
+
   return item;
 }
 
@@ -671,17 +773,24 @@ function initEditProfile(currentUserData) {
 
   if (!editBtn) return;
 
-  editBtn.onclick = () => {
+  // 临时变量
+  let tempAvatarFile = null;       // 原始文件对象（仅用于预览和保存）
+  let tempAvatarOpfsPath = null;   // 生成的 opfs:// 路径（最终传给后端）
+
+  editBtn.onclick = async () => {
     modal.classList.add('show');
 
-    // 填充当前数据
-    document.getElementById('currentAvatarPreview').src = document.getElementById('profileAvatar').src;
+    // 填充当前数据（头像从 OPFS 读取）
+    const currentAvatarUrl = await getFileUrlFromOPFS(document.getElementById('profileAvatar').dataset.opfsPath || '');
+    document.getElementById('currentAvatarPreview').src = currentAvatarUrl || document.getElementById('profileAvatar').src;
+
     document.getElementById('editUsername').value = document.getElementById('profileUsername').textContent.trim();
     document.getElementById('editBio').value = document.getElementById('profileBio').textContent.trim();
 
     document.getElementById('newAvatarPreview').style.display = 'none';
     document.getElementById('currentAvatarPreview').style.display = 'block';
     tempAvatarFile = null;
+    tempAvatarOpfsPath = null;
     document.getElementById('newAvatarInput').value = '';
   };
 
@@ -691,30 +800,52 @@ function initEditProfile(currentUserData) {
   document.getElementById('cancelEdit').onclick = closeModal;
   document.querySelector('.modal-overlay').onclick = closeModal;
 
-  // 头像预览
-  document.getElementById('newAvatarInput').addEventListener('change', e => {
+  // 头像选择与预览 + 保存到 OPFS
+  document.getElementById('newAvatarInput').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // 简单校验
+    if (!file.type.startsWith('image/')) {
+      showToast('请选择图片格式文件');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('图片不能超过 10MB');
+      return;
+    }
+
+    // 预览
     const reader = new FileReader();
-    reader.onload = ev => {
+    reader.onload = async (ev) => {
       document.getElementById('previewImg').src = ev.target.result;
       document.getElementById('newAvatarPreview').style.display = 'block';
       document.getElementById('currentAvatarPreview').style.display = 'none';
-      tempAvatarFile = file;
     };
     reader.readAsDataURL(file);
+
+    // 立即保存到本地 OPFS，生成路径
+    const opfsPath = await saveFileToOPFS(file);
+    if (opfsPath) {
+      tempAvatarFile = file;
+      tempAvatarOpfsPath = opfsPath;
+
+      // 即时更新预览为 OPFS blob URL（更真实）
+      const blobUrl = await getFileUrlFromOPFS(opfsPath);
+      document.getElementById('previewImg').src = blobUrl;
+    }
   });
 
-  // 移除预览
+  // 移除新头像预览
   document.getElementById('removeAvatar').onclick = () => {
     document.getElementById('newAvatarPreview').style.display = 'none';
     document.getElementById('currentAvatarPreview').style.display = 'block';
     tempAvatarFile = null;
+    tempAvatarOpfsPath = null;
     document.getElementById('newAvatarInput').value = '';
   };
 
-  // 保存资料（
+  // 保存资料
   document.getElementById('saveProfile').onclick = async () => {
     const newUsername = document.getElementById('editUsername').value.trim();
     const newBio = document.getElementById('editBio').value.trim();
@@ -725,50 +856,46 @@ function initEditProfile(currentUserData) {
     }
 
     try {
-      let newAvatarUrl = document.getElementById('profileAvatar').src;
+      let finalAvatarPath = document.getElementById('profileAvatar').dataset.opfsPath || null;
 
-      // 如果更换了头像，先上传
-      if (tempAvatarFile) {
-        const formData = new FormData();
-        formData.append('avatar', tempAvatarFile);
+      // 如果换了新头像，使用 OPFS 生成的路径
+      if (tempAvatarOpfsPath) {
+        finalAvatarPath = tempAvatarOpfsPath;
 
-        const uploadRes = await axios.put ('/api/user/modify', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-
-        if (uploadRes.data.code === 200) {
-          newAvatarUrl = uploadRes.data.data.avatarUrl;
-        } else {
-          showToast('头像上传失败');
-          return;
-        }
+        // 即时更新页面大头像
+        const newBlobUrl = await getFileUrlFromOPFS(finalAvatarPath);
+        document.getElementById('profileAvatar').src = newBlobUrl;
+        // 可选：保存路径到 data 属性，方便下次打开编辑框
+        document.getElementById('profileAvatar').dataset.opfsPath = finalAvatarPath;
       }
 
-      // 更新资料
+      // 调用后端接口，只传字符串路径
       const updateRes = await axios.put('/api/user/modify', {
         nickname: newUsername,
         bio: newBio,
-        avatar: newAvatarUrl
+        avatar: finalAvatarPath  // 传 opfs://xxx 或 null（如果想清除头像）
       });
 
       if (updateRes.data.code === 200) {
-        // 更新页面
+        // 更新页面文字
         document.getElementById('profileUsername').textContent = newUsername;
         document.getElementById('profileBio').textContent = newBio || '这家伙很懒，什么都没写～';
-        document.getElementById('profileAvatar').src = newAvatarUrl;
 
-        // 更新本地用户信息
+        // 更新本地缓存（如果你们有存 userInfo）
         const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
         userInfo.nickname = newUsername;
         userInfo.bio = newBio;
-        userInfo.avatar = newAvatarUrl;
+        userInfo.avatar = finalAvatarPath;
         localStorage.setItem('userInfo', JSON.stringify(userInfo));
 
         modal.classList.remove('show');
         showToast('资料更新成功！');
+      } else {
+        showToast(updateRes.data.message || '更新失败');
       }
     } catch (err) {
-      showToast('更新失败：' + (err.response?.data?.message || '未知错误'));
+      console.error('资料更新错误', err);
+      showToast('更新失败：' + (err.response?.data?.message || '网络错误'));
     }
   };
 }

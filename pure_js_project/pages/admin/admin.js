@@ -175,7 +175,6 @@ let dailyPostsChart;
 
 async function loadStats() {
   try {
-    // 假设后端提供统计/api/admin/stats
     const res = await axios.get('/api/admin/user/active');
 
     if (res.data.code === 200) {
@@ -187,18 +186,24 @@ async function loadStats() {
       document.getElementById('weekActive').textContent = data.weekActive || 0;
       document.getElementById('totalPosts').textContent = data.totalPosts || 0;
 
-      // 渲染图表（销毁旧图表防止重复）
+      const dailyActive = data.dailyActive || [];
+
+      // 渲染图表
       if (activeUsersChart) activeUsersChart.destroy();
       if (dailyPostsChart) dailyPostsChart.destroy();
+
+      // 从 dailyActive 数组提取 labels 和 values
+      const activeLabels = data.dailyActive.map(item => item.labels);
+      const activeValues = data.dailyActive.map(item => item.values);
 
       const ctx1 = document.getElementById('activeUsersChart').getContext('2d');
       activeUsersChart = new Chart(ctx1, {
         type: 'line',
         data: {
-          labels: data.dailyActive.labels,  // e.g. ['12-15', '12-16', ..., '12-21']
+          labels: activeLabels,
           datasets: [{
             label: '活跃用户数',
-            data: data.dailyActive.values,
+            data: activeValues,
             borderColor: '#3b82f6',
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
             fill: true,
@@ -211,14 +216,17 @@ async function loadStats() {
         }
       });
 
+      const postsLabels = data.dailyPosts.map(item => item.labels);
+      const postsValues = data.dailyPosts.map(item => item.values);
+
       const ctx2 = document.getElementById('dailyPostsChart').getContext('2d');
       dailyPostsChart = new Chart(ctx2, {
         type: 'bar',
         data: {
-          labels: data.dailyPosts.labels,
+          labels: postsLabels,
           datasets: [{
             label: '新发布内容数',
-            data: data.dailyPosts.values,
+            data: postsValues,
             backgroundColor: '#10b981'
           }]
         },
@@ -227,6 +235,8 @@ async function loadStats() {
           scales: { y: { beginAtZero: true } }
         }
       });
+
+      
     } else {
       showToast('加载统计数据失败', 'error');
     }
@@ -284,12 +294,12 @@ async function loadContents() {
 
         let mediaFileUrl = content.fileUrl || null;
 
-// 不在这里生成 preview HTML，而是存原始路径
+// 存原始路径
 let mediaPreview = '<p style="color:#94a3b8;">无媒体</p>';
 if (mediaFileUrl) {
   // 仅生成占位，真实内容在打开模态框时异步加载
   if (content.type === 'IMAGE') {
-    mediaPreview = `<img src="${mediaFileUrl}" style="max-width:100%; max-height:600px; border-radius:12px;">`; // 图片可直接用（OPFS路径浏览器不认，但后面会替换）
+    mediaPreview = `<img src="${mediaFileUrl}" style="max-width:100%; max-height:600px; border-radius:12px;">`; // 图片可直接用
   } else if (content.type === 'VIDEO') {
     mediaPreview = '<div style="width:100%; max-height:600px; background:#000; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff;">视频加载中...</div>';
   }
@@ -304,7 +314,7 @@ if (mediaFileUrl) {
               <small style="color:#64748b;">ID: ${content.userId}</small>
             </div>
           </td>
-          <td style="max-width:300px;" title="${fullText}">${shortText}</td>
+          <td style="max-width:300px;" title="${shortText}">${shortText}</td>
           <td>
             <span style="padding:4px 12px; background:#e0e7ff; color:#4338ca; border-radius:20px; font-size:0.85rem;">
               ${mediaType}

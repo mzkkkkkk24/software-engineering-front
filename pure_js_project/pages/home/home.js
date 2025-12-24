@@ -1,3 +1,8 @@
+const aiClient = axios.create({
+  baseURL: 'http://172.31.233.184:8000',
+  withCredentials: false, // 不带 cookie
+  timeout: 15000,
+});
 // OPFS 相关
 const OPFS_PREFIX = 'opfs://';  // 我们自定义的前缀标识
 
@@ -30,6 +35,10 @@ async function saveFileToOPFS(file) {
 }
 
 async function getFileUrlFromOPFS(opfsPath) {
+
+  if (!opfsPath || typeof opfsPath !== 'string') {
+    return '../../common/images/test.png';  // 直接返回默认头像
+  }
   if (!opfsPath.startsWith(OPFS_PREFIX)) return opfsPath; // 兼容旧服务器URL
 
   try {
@@ -111,7 +120,9 @@ async function loadCurrentUser() {
     if (res.data.code === 200) {
       currentUser = res.data.data;
       // 更新头像
-      document.querySelector('#userMenuBtn img').src = currentUser.avatar || '../../common/images/test.png';
+      const avatarUrl = await getFileUrlFromOPFS(currentUser.avatar);
+      document.querySelector('#userMenuBtn img').src = avatarUrl;
+      document.getElementById('postBoxAvatar').src = avatarUrl;
     }
   } catch (err) {
     console.error('获取用户信息失败', err);
@@ -176,6 +187,23 @@ async function renderContentList(contents) {
 }
 
 async function createContentElement(content) {
+
+  // === OPFS 头像处理 ===
+  // 帖子作者头像
+  const authorAvatarUrl = await getFileUrlFromOPFS(content.avatar || content.userAvatar || '');
+
+  // 当前登录用户头像（用于评论输入框）
+  const currentUserAvatarUrl = await getFileUrlFromOPFS(currentUser?.avatar || '');
+
+  // 评论列表中每条评论的头像（如果后端返回 comments 数组且有 avatar）
+  const commentsWithAvatar = (content.comments || []).map(comment => ({
+    ...comment,
+    commentAvatarUrl: '' // 默认空
+  }));
+  // 批量处理评论头像
+  for (let i = 0; i < commentsWithAvatar.length; i++) {
+    commentsWithAvatar[i].commentAvatarUrl = await getFileUrlFromOPFS(commentsWithAvatar[i].avatar || '');
+  }
   const item = document.createElement('div');
   item.className = 'content-item';
   item.dataset.id = content.id;
@@ -236,9 +264,38 @@ async function createContentElement(content) {
     return html;
   }
 
+  const userAvatarUrl = await getFileUrlFromOPFS(content.avatar);
+
+// ===== 文本内容：支持展开/收起 =====
+const fullTextRaw = content.description || content.title || content.text || '(无文本)';
+const fullText = fullTextRaw.trim().replace(/\n/g, '<br>'); // 支持换行显示
+const maxLength = 200;
+
+let textHtml = '';
+
+if (fullTextRaw.length > maxLength) {
+  const shortTextRaw = fullTextRaw.substring(0, maxLength);
+  const shortText = shortTextRaw.replace(/\n/g, '<br>');
+  
+  textHtml = `
+    <div class="content-text-wrapper" data-id="${content.id}">
+      <p class="content-text content-text-short">
+        ${shortText}<span class="ellipsis">...</span>
+        <span class="expand-btn" style="color:#3b82f6;cursor:pointer;margin-left:4px;font-weight:500;">展开</span>
+      </p>
+      <p class="content-text content-text-full" style="display:none;">
+        ${fullText}
+        <span class="collapse-btn" style="color:#3b82f6;cursor:pointer;margin-left:8px;font-weight:500;">收起</span>
+      </p>
+    </div>
+  `;
+} else if (fullTextRaw) {
+  textHtml = `<p class="content-text">${fullText}</p>`;
+}
+
   item.innerHTML = `
     <div class="content-header">
-      <img src="${content.avatar || '../../common/images/test.png'}" alt="头像" class="clickable-avatar" data-userid="${content.userId}">
+      <img src="${authorAvatarUrl}" alt="用户头像" class="avatar clickable-avatar" data-userid="${content.userId}">
       <div class="user-meta">
         <h3 class="username clickable-avatar" data-userid="${content.userId}">${content.nickname || content.username}</h3>
         <p class="post-time">${formatTime(content.createTime)}</p>
@@ -257,7 +314,7 @@ async function createContentElement(content) {
           ${content.tags.map(tag => `<span class="content-tag">#${tag.trim()}</span>`).join('')}
         </div>
       ` : ''}
-      ${content.description ? `<p class="content-text">${content.description}</p>` : ''}
+      ${textHtml}
       ${mediaHtml}
     </div>
 
@@ -273,6 +330,10 @@ async function createContentElement(content) {
     </div>
     ` : ''}
       <div class="interaction">
+        ${content.type === 'IMAGE' ? `
+        <button class="interact-btn image-search-btn" data-id="${content.id}" title="以图搜图">
+          <i class="fas fa-camera"></i> 以图搜图
+        </button>` : ''}
         <button class="interact-btn comment-btn" data-id="${content.id}">
           <i class="fas fa-comment"></i> 评论 (${content.viewCount || 0})
         </button>
@@ -284,7 +345,7 @@ async function createContentElement(content) {
   <div class="comments-list" id="commentsList-${content.id}"></div>
   
   <div class="comment-form" style="margin-top:1rem;display:flex;gap:0.5rem;align-items:start;padding-bottom:1rem;">
-    <img src="${currentUser?.avatar || '../../common/images/test.png'}" style="width:40px;height:40px;border-radius:50%;flex-shrink:0;">
+   <img src="${currentUserAvatarUrl}" alt="我的头像" style="width:40px;height:40px;border-radius:50%;flex-shrink:0;">
     <textarea class="comment-textarea" placeholder="写下你的评论..." style="flex:1;padding:0.8rem;border:1px solid #e2e8f0;border-radius:12px;resize:none;height:60px;"></textarea>
 <button class="submit-comment-btn" data-contentid="${content.id}" style="align-self:end;padding:0.8rem 1.2rem;margin-right:0.5rem;background:#3b82f6;color:white;border:none;border-radius:12px;cursor:pointer;">发送</button>  </div>
 </div>
@@ -327,7 +388,7 @@ async function createContentElement(content) {
         await loadComments(content.id, commentsSection);
       }
     };
-
+    let viewCount = content.viewCount || 0;
     // 发送评论
     const submitBtn = item.querySelector('.submit-comment-btn');
     const textarea = item.querySelector('.comment-textarea');
@@ -338,6 +399,7 @@ async function createContentElement(content) {
           showToast('评论内容不能为空');
           return;
         }
+        
         try {
           await axios.post('/api/comment', {
             contentId: content.id,
@@ -346,13 +408,27 @@ async function createContentElement(content) {
           });
           textarea.value = '';
           await loadComments(content.id, commentsSection);
-          commentBtn.innerHTML = `<i class="fas fa-comment"></i> 评论 (${(content.viewCount || 0) + 1})`;
-          content.commentCount = (content.viewCount || 0) + 1;
+          viewCount++;
+          commentBtn.innerHTML = `<i class="fas fa-comment"></i> 评论 (${viewCount })`;
+          content.commentCount = viewCount ;
         } catch (err) {
           showToast('评论失败：' + (err.response?.data?.message || '未知错误'));
         }
       };
     }
+  }
+
+  // ===== 以图搜图按钮（仅图片类型显示）=====
+  const imageSearchBtn = item.querySelector('.image-search-btn');
+  if (imageSearchBtn) {
+    imageSearchBtn.onclick = async () => {
+      const id = Number(imageSearchBtn.dataset.id);
+      if (Number.isFinite(id)) {
+        await window.performImageSearchByContentId?.(id);
+      } else {
+        showToast('内容ID无效', 'error');
+      }
+    };
   }
 
   // ===== 评分交互逻辑 =====
@@ -429,6 +505,27 @@ async function createContentElement(content) {
     })();
   }
 
+  // ===== 为当前卡片绑定展开/收起事件 =====
+const wrapper = item.querySelector('.content-text-wrapper');
+if (wrapper) {
+  const shortP = wrapper.querySelector('.content-text-short');
+  const fullP = wrapper.querySelector('.content-text-full');
+  const expandBtn = wrapper.querySelector('.expand-btn');
+  const collapseBtn = wrapper.querySelector('.collapse-btn');
+
+  expandBtn.onclick = (e) => {
+    e.stopPropagation(); // 防止触发卡片点击跳转
+    shortP.style.display = 'none';
+    fullP.style.display = 'block';
+  };
+
+  collapseBtn.onclick = (e) => {
+    e.stopPropagation();
+    fullP.style.display = 'none';
+    shortP.style.display = 'block';
+  };
+}
+
   return item;
 }
 
@@ -447,19 +544,27 @@ async function loadComments(contentId, container) {
         return;
       }
 
-      comments.forEach(comment => {
-        const commentEl = document.createElement('div');
-        commentEl.className = 'comment-item';
-        commentEl.innerHTML = `
-          <img src="${comment.avatar || '../../common/images/test.png'}" alt="头像">
-          <div class="comment-info">
-            <strong>${comment.nickname || comment.username}</strong>
-            <p>${comment.content || comment.text}</p>
-            <span class="comment-time">${formatTime(comment.createTime)}</span>
-          </div>
-        `;
-        commentsList.appendChild(commentEl);
-      });
+      // 使用 Promise.all 批量处理所有头像
+  const commentAvatarUrls = await Promise.all(
+    comments.map(c => getFileUrlFromOPFS(c.avatar || ''))
+  );
+
+    comments.forEach((comment, index) => {
+    const commentEl = document.createElement('div');
+    commentEl.className = 'comment-item';
+
+    commentEl.innerHTML = `
+      <img src="${commentAvatarUrls[index]}" alt="评论者头像">
+      <div class="comment-info">
+        <strong>${comment.nickname || comment.username || '匿名'}</strong>
+        <p>${comment.content || comment.text || ''}</p>
+        <span class="comment-time">${formatTime(comment.createTime)}</span>
+      </div>
+    `;
+
+    commentsList.appendChild(commentEl);
+  });
+      
     }
   } catch (err) {
     console.error('加载评论失败', err);
@@ -1199,114 +1304,234 @@ function initAnimatedBackground() {
   });
 }
 
-// ==================== 顶部搜索功能：内容检索 ====================
+// ==================== 顶部搜索功能：多模态检索（文本搜图 / 以图搜图） ====================
+
+// AI 搜索服务（FastAPI）
+// 部署： http://172.31.233.184:8000  （内网）
+// 认证：开放接口，无需 JWT Token
+
+
+// 根据内容ID数组批量拉取详情（复用已有 /api/content/{id}）
+async function fetchContentsByIds(ids) {
+  const tasks = (ids || []).map(async (id) => {
+    try {
+      const res = await axios.get(`/api/content/${id}`);
+      if (res.data && res.data.code === 200) return res.data.data;
+    } catch (e) {}
+    return null;
+  });
+  const results = await Promise.all(tasks);
+  return results.filter(Boolean);
+}
+
+function clearListForSearch() {
+  const contentList = document.getElementById('contentList');
+  if (!contentList) return;
+  contentList.innerHTML = `
+    <div style="text-align:center; padding:3.5rem 1rem; color:#64748b;">
+      <i class="fas fa-spinner fa-spin" style="margin-right:0.6rem;"></i>
+      搜索中...
+    </div>
+  `;
+  hasMore = false; // 搜索结果不启用“加载更多”
+  document.getElementById('loadingMore').style.display = 'none';
+  document.getElementById('noMore').style.display = 'none';
+}
+
+function renderSearchTip(modeLabel, keyword, count) {
+  const tip = document.createElement('div');
+  tip.style = 'display:flex; align-items:center; justify-content:space-between; gap:1rem; text-align:left; padding:1rem 1.2rem; color:#64748b; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; margin-bottom:1.2rem;';
+  tip.innerHTML = `
+    <div style="line-height:1.6;">
+      <div style="font-weight:600; color:#334155;">${modeLabel}结果：<strong>${count}</strong> 条</div>
+      <div style="font-size:0.95rem;">关键词：<strong>${keyword}</strong> <span style="color:#94a3b8;">（清空输入可恢复推荐流）</span></div>
+    </div>
+    <button class="clear-search-btn" style="white-space:nowrap; padding:0.6rem 1rem; background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; cursor:pointer; color:#334155;">
+      返回推荐
+    </button>
+  `;
+  tip.querySelector('.clear-search-btn').onclick = async () => {
+    const input = document.getElementById('searchInput');
+    if (input) input.value = '';
+    hasMore = true;
+    await loadContentList(true);
+  };
+  return tip;
+}
+
+// ==================== 普通内容检索（关键词 / 标签） ====================
+async function runContentSearch(keyword, page = 1, size = 10) {
+  const res = await axios.get('/api/content/search', {
+    params: { keyword, page, size }
+  });
+
+  if (res.data && res.data.code === 200) {
+    return res.data.data || {};
+  }
+  throw new Error(res.data?.message || '内容检索失败');
+}
+
+async function renderSearchByRecords(records, modeLabel, keyword) {
+  const contentList = document.getElementById('contentList');
+  contentList.innerHTML = '';
+  contentList.appendChild(renderSearchTip(modeLabel, keyword, (records || []).length));
+
+  if (!records || records.length === 0) {
+    contentList.insertAdjacentHTML('beforeend', `
+      <div style="text-align:center; padding:5rem 2rem; color:#94a3b8;">
+        <i class="fas fa-search fa-3x" style="margin-bottom:1rem; opacity:0.6;"></i>
+        <p style="font-size:1.1rem; margin-bottom:0.5rem;">未找到匹配内容</p>
+        <p style="font-size:0.95rem; color:#64748b;">换个关键词/标签试试～</p>
+      </div>
+    `);
+    return;
+  }
+
+  await renderContentList(records);
+}
+
+async function runTextSearch(keyword, size = 10) {
+  const res = await aiClient.post('http://172.31.233.184:8000/ai/search/text', { query: keyword, size });
+  if (res.data && res.data.code === 200) return res.data.data || [];
+  throw new Error(res.data?.message || '文本搜图失败');
+}
+
+async function runImageSearch(contentId, size = 10) {
+  const res = await aiClient.post('http://172.31.233.184:8000/ai/search/image', { contentId, size });
+  if (res.data && res.data.code === 200) return res.data.data || [];
+  throw new Error(res.data?.message || '以图搜图失败');
+}
+
+async function renderSearchByIds(ids, modeLabel, keyword) {
+  const contentList = document.getElementById('contentList');
+  contentList.innerHTML = '';
+  const tip = renderSearchTip(modeLabel, keyword, (ids || []).length);
+  contentList.appendChild(tip);
+
+  if (!ids || ids.length === 0) {
+    contentList.insertAdjacentHTML('beforeend', `
+      <div style="text-align:center; padding:5rem 2rem; color:#94a3b8;">
+        <i class="fas fa-search fa-3x" style="margin-bottom:1rem; opacity:0.6;"></i>
+        <p style="font-size:1.1rem; margin-bottom:0.5rem;">
+          未找到匹配内容
+        </p>
+        <p style="font-size:0.95rem; color:#64748b;">
+          你可以换个描述/关键词，或在图片卡片上点击“以图搜图”～
+        </p>
+      </div>
+    `);
+    return;
+  }
+
+  const contents = await fetchContentsByIds(ids);
+
+  // 有些ID可能已被删除/无权限，过滤后为空则提示
+  if (!contents || contents.length === 0) {
+    contentList.insertAdjacentHTML('beforeend', `
+      <div style="text-align:center; padding:5rem 2rem; color:#94a3b8;">
+        <p style="font-size:1.05rem;">结果ID已返回，但未拉取到内容详情（可能已删除或无权限）。</p>
+      </div>
+    `);
+    return;
+  }
+
+  await renderContentList(contents);
+}
+
+async function performMultimodalSearch(mode, keyword) {
+  clearListForSearch();
+
+  try {
+    // 1) 内容检索（关键词/标签）
+    if (mode === 'content') {
+      const data = await runContentSearch(keyword, 1, 10);
+      const records = Array.isArray(data) ? data : (data.records || []);
+      await renderSearchByRecords(records, '内容检索', keyword);
+      return;
+    }
+
+    // 2) 以图搜图（输入 contentId）
+    if (mode === 'image') {
+      const contentId = Number(keyword);
+      if (!Number.isFinite(contentId)) {
+        document.getElementById('contentList').innerHTML = '';
+        showToast('以图搜图需要输入数字内容ID，或在图片卡片上点“以图搜图”', 'error');
+        return;
+      }
+      const ids = await runImageSearch(contentId, 10);
+      await renderSearchByIds(ids, '以图搜图', String(contentId));
+      return;
+    }
+
+    // 3) 以文搜图（AI 文本搜图，保留原逻辑）
+    const ids = await runTextSearch(keyword, 10);
+    await renderSearchByIds(ids, '以文搜图', keyword);
+
+  } catch (err) {
+    console.error('搜索失败', err);
+    const contentList = document.getElementById('contentList');
+    contentList.innerHTML = `
+      <div style="text-align:center; padding:4rem; color:#ef4444;">
+        <p>搜索失败：${err?.message || '未知错误'}</p>
+        <p style="margin-top:0.5rem; font-size:0.95rem; color:#64748b;">
+          若是 AI 搜索失败，可能是 AI 服务不可达或跨域未放行。
+        </p>
+      </div>
+    `;
+    showToast('搜索失败，请稍后再试', 'error');
+  }
+}
+
+
+// 暴露给内容卡片上的“以图搜图”按钮使用
+window.performImageSearchByContentId = async function(contentId) {
+  const input = document.getElementById('searchInput');
+  const mode = document.getElementById('searchMode');
+  if (mode) mode.value = 'image';
+  if (input) input.value = String(contentId);
+  await performMultimodalSearch('image', String(contentId));
+};
 
 function initTopSearch() {
   const searchInput = document.getElementById('searchInput');
   const searchBtn = document.getElementById('searchBtn');
+  const modeSelect = document.getElementById('searchMode');
 
-  const performTagSearch = async () => {
+  if (!searchInput || !searchBtn || !modeSelect) return;
+
+  const syncPlaceholder = () => {
+     if (modeSelect.value === 'image') {
+      searchInput.placeholder = '输入内容ID进行以图搜图...（或在图片卡片上点“以图搜图”）';
+    } else if (modeSelect.value === 'content') {
+      searchInput.placeholder = '输入关键词/标签进行内容检索...（如：风景 / 旅行 / 美食）';
+    } else {
+      searchInput.placeholder = '输入描述词进行以文搜图...（如：开心的狗）';
+    }
+  };
+  syncPlaceholder();
+  modeSelect.addEventListener('change', syncPlaceholder);
+
+  const doSearch = async () => {
     const keyword = searchInput.value.trim();
 
-    // 清空当前列表，准备显示搜索结果
-    const contentList = document.getElementById('contentList');
-    contentList.innerHTML = '';
-    hasMore = false; // 搜索结果不启用“加载更多”
-
+    // 空输入：恢复默认内容流
     if (!keyword) {
-      // 空输入：恢复默认内容流
-      loadContentList(true);
+      hasMore = true;
+      document.getElementById('noMore').style.display = 'none';
+      await loadContentList(true);
       return;
     }
 
-    try {
-      // 调用按标签搜索接口
-      const res = await axios.get('/api/content/search', {
-        params: {
-          keyword: keyword,   // 后端支持 keyword
-          page: 1,
-          size: 20         // 搜索结果一次加载较多，避免分页麻烦
-        }
-      });
-
-      if (res.data.code === 200) {
-        const records = res.data.data?.records || [];
-
-        if (records.length > 0) {
-          // 显示搜索结果提示
-          const tip = document.createElement('div');
-          tip.style = 'text-align:center; padding:1.5rem 1rem; color:#64748b; background:#f8fafc; border-radius:12px; margin-bottom:1.5rem;';
-          tip.innerHTML = `找到 <strong>${records.length}</strong> 条包含标签 “<strong>${keyword}</strong>” 的内容`;
-          contentList.appendChild(tip);
-
-          // 渲染内容
-          renderContentList(records);
-        } else {
-          // 无结果提示
-          contentList.innerHTML = `
-            <div style="text-align:center; padding:5rem 2rem; color:#94a3b8;">
-              <i class="fas fa-search fa-3x" style="margin-bottom:1rem; opacity:0.6;"></i>
-              <p style="font-size:1.1rem; margin-bottom:0.5rem;">
-                未找到包含 “<strong>${keyword}</strong>” 的内容
-              </p>
-              <p style="font-size:0.95rem; color:#64748b;">
-                试试其他内容，比如“旅行”、“美食”、“摄影”等～
-              </p>
-            </div>
-          `;
-        }
-      }
-    } catch (err) {
-      console.error('搜索失败', err);
-      contentList.innerHTML = `
-        <div style="text-align:center; padding:4rem; color:#ef4444;">
-          <p>搜索失败，请检查网络后重试</p>
-        </div>
-      `;
-      // 出错后恢复默认列表
-      // loadContentList(true);
-    }
+    await performMultimodalSearch(modeSelect.value, keyword);
   };
 
-  // ==================== Toast 弹窗提示函数 ====================
-
-function showToast(message, type = 'success', duration = 3000) {
-  const container = document.getElementById('toastContainer');
-  if (!container) return;
-
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-
-  const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
-
-  toast.innerHTML = `
-    <i class="fas ${icon} toast-icon"></i>
-    <div class="toast-message">${message} </div>
-    <button class="close-toast" onclick="this.parentElement.remove()">&times;</button>
-  `;
-
-  container.appendChild(toast);
-
-  // 触发显示动画
-  setTimeout(() => toast.classList.add('show'), 100);
-
-  // 自动消失
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 400);
-  }, duration);
-}
-
   // 绑定事件
-  searchBtn.onclick = performTagSearch;
-
+  searchBtn.onclick = doSearch;
   searchInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      performTagSearch();
-    }
+    if (e.key === 'Enter') doSearch();
   });
 
-  // 可选：输入框获得焦点时选中内容
+  // 输入框获得焦点时选中内容
   searchInput.addEventListener('focus', () => {
     searchInput.select();
   });
