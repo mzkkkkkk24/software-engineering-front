@@ -1665,3 +1665,214 @@ document.addEventListener('keydown', (e) => {
     document.body.style.overflow = '';
   }
 });
+
+// ==================== 右键图片 -> 分析图片（调用 /ai/analyze） ====================
+
+// 把 dataURL 转成 base64
+function stripDataUrlPrefix(dataUrl) {
+  if (!dataUrl) return '';
+  return dataUrl;
+}
+
+// 将 img.src 转换为 dataURL
+async function srcToDataUrl(src) {
+  // 已经是 dataURL
+  if (src.startsWith('data:')) return src;
+
+  // blob: / http(s): 都用 fetch 拉取再转
+  const resp = await fetch(src);
+  const blob = await resp.blob();
+
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+// 3) 弹窗控制器（核心：确保 show 生效 + 防滚动 + 防冲突）
+function createAnalyzeModalController() {
+  const modal = document.getElementById('analyzeModal');
+  const overlay = document.getElementById('analyzeOverlay');
+  const closeBtn = document.getElementById('closeAnalyzeModal');
+  const cancelBtn = document.getElementById('cancelAnalyzeBtn');
+  const body = document.getElementById('analyzeBody');
+  const content = modal ? modal.querySelector('.modal-content') : null;
+
+  if (!modal || !overlay || !body || !content) {
+    console.error('[AnalyzeModal] 关键节点缺失：', { modal, overlay, body, content });
+    return null;
+  }
+
+  // 强制兜底样式（防止被其他 CSS 覆盖导致看不见）
+  modal.style.position = 'fixed';
+  modal.style.inset = '0';
+  modal.style.zIndex = '99999';        // 兜底：压过页面所有元素
+  modal.style.alignItems = 'center';
+  modal.style.justifyContent = 'center';
+
+  function open(htmlLoading = true) {
+    // 先插入内容，再显示（避免显示空白/闪烁）
+    if (htmlLoading) {
+      body.innerHTML = `
+        <div style="text-align:center; padding:2.2rem 1rem; color:#64748b;">
+          <i class="fas fa-spinner fa-spin" style="margin-right:0.6rem;"></i>
+          分析中...
+        </div>
+      `;
+    }
+    modal.classList.add('show');
+
+    // 禁止背景滚动
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function close() {
+    modal.classList.remove('show');
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+  }
+
+  // 关闭逻辑：只在点击“遮罩层”时关闭，不要让内容区冒泡误关
+  overlay.addEventListener('click', close);
+  closeBtn && closeBtn.addEventListener('click', close);
+  cancelBtn && cancelBtn.addEventListener('click', close);
+
+  // 内容区阻止冒泡（关键）
+  content.addEventListener('click', (e) => e.stopPropagation());
+  // 点击 modal 背景（非内容）也关闭
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) close();
+  });
+
+  // ESC 关闭
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') close();
+  });
+
+  return { modal, body, open, close };
+}
+
+// 4) 主功能：右键图片显示菜单，点菜单“分析图片”打开弹窗并请求
+function initImageRightClickAnalyze_REWRITE() {
+  const menu = document.getElementById('imgContextMenu');
+  const menuAnalyze = document.getElementById('menuAnalyzeImage');
+  const modalCtl = createAnalyzeModalController();
+
+  if (!menu || !menuAnalyze || !modalCtl) {
+    console.error('[Analyze] 缺少右键菜单或弹窗节点');
+    return;
+  }
+
+  let last = { contentId: null, imgSrc: null };
+
+  const hideMenu = () => { menu.style.display = 'none'; };
+
+  // 右键图片：弹出菜单
+  document.addEventListener('contextmenu', (e) => {
+    const img = e.target.closest('.media-container img');
+    if (!img) return;
+
+    const card = img.closest('.content-item');
+    const contentId = card?.dataset?.id;
+    if (!contentId) return;
+
+    e.preventDefault();
+
+    last = { contentId, imgSrc: img.src };
+
+    // 定位菜单
+    const w = 180, h = 54;
+    const left = Math.min(e.clientX, window.innerWidth - w - 10);
+    const top = Math.min(e.clientY, window.innerHeight - h - 10);
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    menu.style.display = 'block';
+  });
+
+  function escapeHtml(unsafe) {
+  if (!unsafe) return '';
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+  // 点击任意位置关闭菜单
+  document.addEventListener('click', hideMenu);
+  window.addEventListener('scroll', hideMenu);
+  window.addEventListener('resize', hideMenu);
+
+  // 点击“分析图片”
+  menuAnalyze.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    hideMenu();
+
+    const { contentId, imgSrc } = last;
+    if (!contentId || !imgSrc) return;
+
+    // 先强制打开弹窗（确保可见）
+    modalCtl.open(true);
+
+    try {
+      const dataUrl = await srcToDataUrl(imgSrc);
+
+      // 调用 AI 接口（沿用你现有 aiClient）
+      const res = await aiClient.post('/ai/analyze', {
+        contentId: Number(contentId),
+        imageUrl: dataUrl   // 你原来 stripDataUrlPrefix 其实没去掉前缀，这里直接传 dataUrl
+      });
+
+      const payload = res?.data || {};
+      if (payload.code !== 200) throw new Error(payload.message || '分析失败');
+
+      const d = payload.data || {};
+      const tags = Array.isArray(d.tags) ? d.tags : [];
+
+      modalCtl.body.innerHTML = `
+        <div class="analyze-result">
+          <div class="analyze-preview">
+            <img src="${dataUrl}" alt="预览">
+          </div>
+
+          <div class="analyze-kv">
+            <div class="row"><span class="label">内容ID：</span><span>${escapeHtml(contentId)}</span></div>
+            <div class="row"><span class="label">描述：</span><span>${escapeHtml(d.caption ?? '-')}</span></div>
+            <div class="row" style="align-items:flex-start;">
+              <span class="label">标签：</span>
+              <div class="analyze-tags">
+                ${
+                  tags.length
+                    ? tags.map(t => `<span class="analyze-tag">#${escapeHtml(String(t).trim())}</span>`).join('')
+                    : `<span style="color:#94a3b8;">(无)</span>`
+                }
+              </div>
+            </div>
+            <div class="row">
+              <span class="label">安全：</span>
+              <span style="font-weight:700; color:${d.isSafe ? '#10b981' : '#ef4444'};">
+                ${d.isSafe ? '安全' : '存在风险'}
+              </span>
+            </div>
+          </div>
+        </div>
+      `;
+    } catch (err) {
+      console.error('[Analyze] 失败：', err);
+      modalCtl.body.innerHTML = `
+        <div style="padding:1.2rem; color:#ef4444;">
+          <div style="font-weight:700; margin-bottom:0.4rem;">分析失败</div>
+          <div style="color:#64748b;">${escapeHtml(err?.message || '未知错误')}</div>
+        </div>
+      `;
+    }
+  });
+}
+
+// ✅ 只初始化一次（放在 home.js 底部即可）
+document.addEventListener('DOMContentLoaded', () => {
+  initImageRightClickAnalyze_REWRITE();
+});

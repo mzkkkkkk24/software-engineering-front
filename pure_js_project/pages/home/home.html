@@ -313,6 +313,33 @@
   <img id="modalImage" src="" alt="大图">
 </div>
 
+<!-- 图片右键菜单 -->
+<div id="imgContextMenu" class="img-context-menu" style="display:none;">
+  <div class="menu-item" id="menuAnalyzeImage">
+    <i class="fas fa-magic"></i>
+    <span>分析图片</span>
+  </div>
+</div>
+
+<!-- 图片分析结果弹窗 -->
+<div class="modal analyze-modal" id="analyzeModal">
+  <div class="modal-overlay" id="analyzeOverlay"></div>
+  <div class="modal-content" style="max-width: 720px; width: 92%;">
+    <div class="modal-header">
+      <h2>图片智能分析</h2>
+      <button class="close-btn" id="closeAnalyzeModal"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="modal-body" id="analyzeBody" style="padding: 1.2rem 1.5rem;">
+      <!-- 动态填充 -->
+    </div>
+
+    <div class="modal-footer">
+      <button class="cancel-btn" id="cancelAnalyzeBtn">关闭</button>
+    </div>
+  </div>
+</div>
+
   <!-- 引入JS -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="../../common/js/utils.js"></script>
