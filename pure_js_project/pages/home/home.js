@@ -1872,7 +1872,6 @@ function initImageRightClickAnalyze_REWRITE() {
   });
 }
 
-// ✅ 只初始化一次（放在 home.js 底部即可）
 document.addEventListener('DOMContentLoaded', () => {
   initImageRightClickAnalyze_REWRITE();
 });

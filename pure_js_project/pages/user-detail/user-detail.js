@@ -107,7 +107,7 @@ async function fetchUserPosts(userId, userIdParam, page = 1, size = 20) {
     url = '/api/content/user';
   } else {
     // 访问他人主页
-    url = `/api/content/${userId}`;
+    url = `/api/content/user/${userId}`;
   }
   try {
     const res = await axios.get(url, { params });
@@ -629,24 +629,6 @@ item.querySelector('.edit-item').onclick = () => {
       document.getElementById('saveContent').textContent = '保存中...';
 
       let mediaUrls = post.mediaUrls;
-
-      /*// 如果更换了媒体，先上传
-      if (newMediaFile) {
-        const formData = new FormData();
-        formData.append('file', newMediaFile);
-
-        const uploadRes = await axios.post('/api/upload', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-
-        if (uploadRes.data.code === 200) {
-          mediaUrls = [uploadRes.data.data.url];
-        } else {
-          showToast('媒体上传失败');
-          return;
-        }
-      }*/
-
       // 更新内容
       const updateRes = await axios.put(`/api/content/${post.id}`, {
         title: title || null,
@@ -660,8 +642,8 @@ item.querySelector('.edit-item').onclick = () => {
         showToast('修改成功！');
         modal.classList.remove('show');
 
-        // 刷新页面或局部更新卡片（推荐局部更新更流畅）
-        location.reload(); // 简单方式：刷新页面
+        // 刷新页面或局部更新卡片
+        location.reload(); // 刷新页面
       } else {
         showToast(updateRes.data.message || '修改失败');
       }
